@@ -5,8 +5,8 @@
 #include "web.h"
 
 // Wi-Fi 
-const char* WIFI_SSID = "";
-const char* WIFI_PASS = "";
+const char* WIFI_SSID = "AC-IoT-Cudy-18DC";
+const char* WIFI_PASS = "31185981";
 const char* MDNS_HOST = "flowssensors";
 
 // Global sensor enabled state (referenced by sensors.h and web.h)
@@ -19,7 +19,7 @@ static void wifi_connect() {
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print('.');
-  }
+  }       
   Serial.println();
   Serial.printf("[wifi] Connected. IP: %s\n", WiFi.localIP().toString().c_str());
   if (MDNS.begin(MDNS_HOST)) {
