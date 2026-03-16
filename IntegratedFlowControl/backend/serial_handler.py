@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """
 Serial Handler module manages serial communication with Arduino for pump control.
-Enhanced for integrated flow control system.
+Enhanced for integrated flow control system with Raspberry Pi support.
 """
 import serial
 import serial.tools.list_ports
 import time
 import threading
 import logging
+import glob
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -20,54 +22,153 @@ class SerialHandler:
         self.lock = threading.Lock()  
         
     def find_arduino_port(self):
-        """Find Arduino port automatically"""
-        logger.info("Scanning for Arduino...")
+        """Find Arduino port automatically with specific USB device ID support for Raspberry Pi"""
+        logger.info("Scanning for Arduino on Raspberry Pi...")
         ports = serial.tools.list_ports.comports()
-        # Common Arduino identifiers
-        arduino_identifiers = [
-            'Arduino',
-            'CH340',  # Common USB-to-serial chip
-            'CP210',  # Silicon Labs USB-to-serial
-            'FT232',  # FTDI USB-to-serial
-            'USB Serial',
-            'ttyACM',  # Linux Arduino identifier
-            'ttyUSB',  # Linux USB serial identifier
+        
+        # Specific hardware identifiers for your Raspberry Pi setup
+        arduino_hardware_ids = [
+            ('2341', '0043'),  # Arduino SA Uno R3 (CDC ACM) - your specific device
+            ('1a86', '7523'),  # QinHeng Electronics CH340 - backup option
         ]
         
+        # First, try to find Arduino by exact hardware ID
         for port in ports:
-            port_info = f"{port.device} - {port.description} - {port.manufacturer}"
+            if hasattr(port, 'vid') and hasattr(port, 'pid'):
+                vid_hex = f"{port.vid:04x}" if port.vid else ""
+                pid_hex = f"{port.pid:04x}" if port.pid else ""
+                
+                for target_vid, target_pid in arduino_hardware_ids:
+                    if vid_hex == target_vid and pid_hex == target_pid:
+                        logger.info(f"Arduino found by hardware ID {target_vid}:{target_pid} on port: {port.device}")
+                        return port.device
+        
+        # Alternative method: check by serial number or manufacturer for your specific devices
+        for port in ports:
+            port_info = f"{port.device} - {port.description}"
+            if hasattr(port, 'manufacturer'):
+                port_info += f" - {port.manufacturer}"
+            if hasattr(port, 'serial_number'):
+                port_info += f" - SN:{port.serial_number}"
             logger.debug(f"Found port: {port_info}")
 
-            for identifier in arduino_identifiers:
-                if identifier.lower() in port.description.lower() or \
-                   (port.manufacturer and identifier.lower() in port.manufacturer.lower()):
-                    logger.info(f"Arduino found on port: {port.device}")
-                    return port.device
+            # Look for Arduino Uno R3 specifically
+            if 'Arduino' in str(port.description) and ('Uno' in str(port.description) or 'CDC ACM' in str(port.description)):
+                logger.info(f"Arduino Uno R3 found on port: {port.device}")
+                return port.device
+                
+            # Look for CH340 serial converter (could be ESP8266 or Arduino)
+            if 'CH340' in str(port.description) or '1a86:7523' in str(port.description):
+                logger.info(f"CH340 device found on port: {port.device}")
+                # We'll prefer the Arduino Uno, but this could be a fallback
+                return port.device
         
-        # If no Arduino-specific port found, try common port names
-        common_ports = [
-            '/dev/ttyACM0',  # Linux
+        # Raspberry Pi specific port patterns
+        rpi_arduino_ports = [
+            '/dev/ttyACM0',    # Most common for Arduino Uno on Raspberry Pi
             '/dev/ttyACM1',
-            '/dev/ttyUSB0',
+            '/dev/ttyUSB0',    # Common for CH340 devices
             '/dev/ttyUSB1',
-            'COM3',  # Windows
-            'COM4',
-            'COM5',
-            'COM6',
-            '/dev/cu.usbmodem*',  # macOS
-            '/dev/cu.usbserial*'
+            '/dev/serial/by-id/usb-Arduino__www.arduino.cc__0043_*',  # Arduino by ID
+            '/dev/serial/by-id/usb-1a86_USB2.0-Serial-*',            # CH340 by ID
         ]
         
-        for port_name in common_ports:
-            if any(port.device == port_name for port in ports):
-                logger.info(f"Trying common Arduino port: {port_name}")
-                return port_name
+        # Try Raspberry Pi specific ports
+        import glob
+        for port_pattern in rpi_arduino_ports:
+            if '*' in port_pattern:
+                matching_ports = glob.glob(port_pattern)
+                for port_name in matching_ports:
+                    if any(port.device == port_name for port in ports):
+                        logger.info(f"Arduino found via pattern match: {port_name}")
+                        return port_name
+            else:
+                if any(port.device == port_pattern for port in ports):
+                    logger.info(f"Arduino found on standard Raspberry Pi port: {port_pattern}")
+                    return port_pattern
         
         logger.warning("No Arduino port found automatically")
+        logger.info("Available ports:")
+        for port in ports:
+            vid_pid = ""
+            if hasattr(port, 'vid') and hasattr(port, 'pid') and port.vid and port.pid:
+                vid_pid = f" (VID:PID = {port.vid:04x}:{port.pid:04x})"
+            logger.info(f"  {port.device} - {port.description}{vid_pid}")
+        
         return None
     
+    def connect_by_device_id(self, vid_pid="2341:0043"):
+        """Connect to Arduino by specific USB device ID (VID:PID)"""
+        logger.info(f"Looking for device with VID:PID = {vid_pid}")
+        
+        ports = serial.tools.list_ports.comports()
+        target_vid, target_pid = vid_pid.split(':')
+        
+        for port in ports:
+            if hasattr(port, 'vid') and hasattr(port, 'pid') and port.vid and port.pid:
+                vid_hex = f"{port.vid:04x}"
+                pid_hex = f"{port.pid:04x}"
+                
+                if vid_hex == target_vid and pid_hex == target_pid:
+                    logger.info(f"Found device {vid_pid} on {port.device}")
+                    return self.connect(port.device)
+        
+        logger.warning(f"Device with VID:PID {vid_pid} not found")
+        return False
+    
+    def get_rpi_device_status(self):
+        """Get detailed device status for Raspberry Pi troubleshooting"""
+        status = {
+            'ports_found': [],
+            'arduino_candidates': [],
+            'permissions': {},
+            'system_info': {}
+        }
+        
+        try:
+            # List all serial ports
+            ports = serial.tools.list_ports.comports()
+            for port in ports:
+                port_info = {
+                    'device': port.device,
+                    'description': port.description,
+                    'manufacturer': getattr(port, 'manufacturer', 'Unknown'),
+                    'vid_pid': None
+                }
+                
+                if hasattr(port, 'vid') and hasattr(port, 'pid') and port.vid and port.pid:
+                    port_info['vid_pid'] = f"{port.vid:04x}:{port.pid:04x}"
+                    
+                    # Check if this looks like Arduino
+                    if port_info['vid_pid'] in ['2341:0043', '1a86:7523']:
+                        status['arduino_candidates'].append(port_info)
+                
+                status['ports_found'].append(port_info)
+            
+            # Check port permissions
+            import os
+            import stat
+            common_ports = ['/dev/ttyACM0', '/dev/ttyUSB0']
+            for port_path in common_ports:
+                if os.path.exists(port_path):
+                    file_stat = os.stat(port_path)
+                    status['permissions'][port_path] = {
+                        'exists': True,
+                        'readable': os.access(port_path, os.R_OK),
+                        'writable': os.access(port_path, os.W_OK),
+                        'mode': oct(stat.S_IMODE(file_stat.st_mode))
+                    }
+                else:
+                    status['permissions'][port_path] = {'exists': False}
+                    
+        except Exception as e:
+            logger.error(f"Error getting device status: {e}")
+            status['error'] = str(e)
+        
+        return status
+    
     def connect(self, port=None):
-        """Connect to Arduino"""
+        """Connect to Arduino with enhanced Raspberry Pi support"""
         with self.lock:
             try:
                 if self.serial_connection and self.serial_connection.is_open:
@@ -77,6 +178,10 @@ class SerialHandler:
                     port = self.find_arduino_port()
                     if port is None:
                         logger.error("Could not find Arduino port")
+                        logger.info("Try specifying the port manually:")
+                        logger.info("  For Arduino Uno: /dev/ttyACM0")
+                        logger.info("  For CH340 devices: /dev/ttyUSB0")
+                        logger.info("  Run 'python3 raspberry_pi_config.py' for device detection")
                         return False
                 
                 # Attempt to connect

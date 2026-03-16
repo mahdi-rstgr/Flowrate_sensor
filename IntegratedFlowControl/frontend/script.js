@@ -153,6 +153,7 @@ class IntegratedFlowController {
     setupCharts() {
         this.setupOverviewChart();
         this.setupDetailedFlowChart();
+        this.setupIndividualSensorCharts();
     }
     
     setupOverviewChart() {
@@ -296,6 +297,62 @@ class IntegratedFlowController {
                 }
             }
         });
+    }
+    
+    setupIndividualSensorCharts() {
+        const sensorColors = ['#007bff', '#28a745', '#ffc107', '#dc3545'];
+        const sensorNames = ['Sensor 1', 'Sensor 2', 'Sensor 3', 'Sensor 4'];
+        
+        for (let i = 1; i <= 4; i++) {
+            const ctx = document.getElementById(`sensor${i}Chart`);
+            if (!ctx) continue;
+            
+            this.charts[`sensor${i}`] = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: `${sensorNames[i-1]} Flow`,
+                        data: [],
+                        borderColor: sensorColors[i-1],
+                        backgroundColor: sensorColors[i-1] + '20',
+                        tension: 0.3,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Flow Rate (mL/min)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Time'
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: `${sensorNames[i-1]} Flow Rate`
+                        },
+                        legend: {
+                            display: false
+                        }
+                    },
+                    animation: {
+                        duration: 0
+                    }
+                }
+            });
+        }
     }
     
     // =================================================================================
@@ -489,6 +546,30 @@ class IntegratedFlowController {
             }
             
             chart.update();
+        }
+        
+        // Update individual sensor charts
+        for (let i = 1; i <= 4; i++) {
+            const chartKey = `sensor${i}`;
+            const sensorKey = `s${i}`;
+            
+            if (this.charts[chartKey]) {
+                const chart = this.charts[chartKey];
+                const sensor = this.sensorData[sensorKey];
+                const flow = sensor && sensor.enabled && sensor.ok ? sensor.flow_1s : 0;
+                
+                // Add new data point
+                chart.data.labels.push(now);
+                chart.data.datasets[0].data.push(flow);
+                
+                // Keep only last 30 points
+                if (chart.data.labels.length > 30) {
+                    chart.data.labels.shift();
+                    chart.data.datasets[0].data.shift();
+                }
+                
+                chart.update();
+            }
         }
     }
     

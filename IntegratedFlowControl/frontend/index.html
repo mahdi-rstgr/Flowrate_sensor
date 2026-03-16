@@ -11,7 +11,7 @@
     <div class="container">
         <!-- Header -->
         <div class="header">
-            <h1>🌊 Integrated Flow Control System</h1>
+            <h1>Flow Control System</h1>
             <div class="system-status-bar">
                 <div class="status-item">
                     <span class="status-dot" id="arduinoStatus"></span>
@@ -140,31 +140,6 @@
                                 </div>
                                 <div id="recordingStatus2" class="status-text">Not Recording</div>
                             </div>
-                            <div class="control-group">
-                                <label>Sensor Enable/Disable:</label>
-                                <div class="sensor-toggles">
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="sensor1Toggle" checked>
-                                        <span class="slider"></span>
-                                        Sensor 1
-                                    </label>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="sensor2Toggle" checked>
-                                        <span class="slider"></span>
-                                        Sensor 2
-                                    </label>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="sensor3Toggle" checked>
-                                        <span class="slider"></span>
-                                        Sensor 3
-                                    </label>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="sensor4Toggle" checked>
-                                        <span class="slider"></span>
-                                        Sensor 4
-                                    </label>
-                                </div>
-                            </div>
                         </div>
                     </div>
 
@@ -173,6 +148,66 @@
                         <h2>📊 Flow Rate Charts</h2>
                         <div class="chart-container">
                             <canvas id="flowChart"></canvas>
+                        </div>
+                    </div>
+                    <!-- Individual Sensor Charts -->
+                    <div class="panel">
+                        <h2>📈 Individual Sensor Flow Charts</h2>
+                        <div class="individual-charts-grid">
+                            <div class="individual-chart">
+                                <h3>Sensor 1 Flow Rate</h3>
+                                <div class="chart-container">
+                                    <canvas id="sensor1Chart"></canvas>
+                                </div>
+                            </div>
+                            <div class="individual-chart">
+                                <h3>Sensor 2 Flow Rate</h3>
+                                <div class="chart-container">
+                                    <canvas id="sensor2Chart"></canvas>
+                                </div>
+                            </div>
+                            <div class="individual-chart">
+                                <h3>Sensor 3 Flow Rate</h3>
+                                <div class="chart-container">
+                                    <canvas id="sensor3Chart"></canvas>
+                                </div>
+                            </div>
+                            <div class="individual-chart">
+                                <h3>Sensor 4 Flow Rate</h3>
+                                <div class="chart-container">
+                                    <canvas id="sensor4Chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Individual Sensor Charts -->
+                    <div class="panel">
+                        <h2>📈 Individual Sensor Flow Charts</h2>
+                        <div class="individual-charts-grid">
+                            <div class="individual-chart">
+                                <h3>Sensor 1 Flow Rate</h3>
+                                <div class="chart-container">
+                                    <canvas id="sensor1Chart"></canvas>
+                                </div>
+                            </div>
+                            <div class="individual-chart">
+                                <h3>Sensor 2 Flow Rate</h3>
+                                <div class="chart-container">
+                                    <canvas id="sensor2Chart"></canvas>
+                                </div>
+                            </div>
+                            <div class="individual-chart">
+                                <h3>Sensor 3 Flow Rate</h3>
+                                <div class="chart-container">
+                                    <canvas id="sensor3Chart"></canvas>
+                                </div>
+                            </div>
+                            <div class="individual-chart">
+                                <h3>Sensor 4 Flow Rate</h3>
+                                <div class="chart-container">
+                                    <canvas id="sensor4Chart"></canvas>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -278,11 +313,13 @@
                                     <label>Time (s):</label>
                                     <input type="number" class="time-input" data-pump="1" value="10" min="1">
                                 </div>
-                                <label class="checkbox-container">
-                                    <input type="checkbox" class="continuous-checkbox" data-pump="1">
-                                    <span class="checkmark"></span>
-                                    Continuous
-                                </label>
+                                <div class="input-group">
+                                    <label class="checkbox-container">
+                                        <input type="checkbox" class="continuous-checkbox" data-pump="1">
+                                        <span class="checkmark"></span>
+                                        Continuous
+                                    </label>
+                                </div>
                             </div>
                             <div class="pump-actions">
                                 <button class="btn btn-success pump-start" data-pump="1">Start</button>
@@ -305,11 +342,13 @@
                                     <label>Time (s):</label>
                                     <input type="number" class="time-input" data-pump="2" value="10" min="1">
                                 </div>
-                                <label class="checkbox-container">
-                                    <input type="checkbox" class="continuous-checkbox" data-pump="2">
-                                    <span class="checkmark"></span>
-                                    Continuous
-                                </label>
+                                <div class="input-group">
+                                    <label class="checkbox-container">
+                                        <input type="checkbox" class="continuous-checkbox" data-pump="2">
+                                        <span class="checkmark"></span>
+                                        Continuous
+                                    </label>
+                                </div>
                             </div>
                             <div class="pump-actions">
                                 <button class="btn btn-success pump-start" data-pump="2">Start</button>
@@ -332,11 +371,13 @@
                                     <label>Time (s):</label>
                                     <input type="number" class="time-input" data-pump="3" value="10" min="1">
                                 </div>
-                                <label class="checkbox-container">
-                                    <input type="checkbox" class="continuous-checkbox" data-pump="3">
-                                    <span class="checkmark"></span>
-                                    Continuous
-                                </label>
+                                <div class="input-group">
+                                    <label class="checkbox-container">
+                                        <input type="checkbox" class="continuous-checkbox" data-pump="3">
+                                        <span class="checkmark"></span>
+                                        Continuous
+                                    </label>
+                                </div>
                             </div>
                             <div class="pump-actions">
                                 <button class="btn btn-success pump-start" data-pump="3">Start</button>
@@ -359,11 +400,13 @@
                                     <label>Time (s):</label>
                                     <input type="number" class="time-input" data-pump="4" value="10" min="1">
                                 </div>
-                                <label class="checkbox-container">
-                                    <input type="checkbox" class="continuous-checkbox" data-pump="4">
-                                    <span class="checkmark"></span>
-                                    Continuous
-                                </label>
+                                <div class="input-group">
+                                    <label class="checkbox-container">
+                                        <input type="checkbox" class="continuous-checkbox" data-pump="4">
+                                        <span class="checkmark"></span>
+                                        Continuous
+                                    </label>
+                                </div>
                             </div>
                             <div class="pump-actions">
                                 <button class="btn btn-success pump-start" data-pump="4">Start</button>
@@ -418,5 +461,10 @@
     </div>
 
     <script src="script.js"></script>
+    
+    <!-- Copyright -->
+    <footer style="text-align: center; padding: 20px; margin-top: 40px; border-top: 1px solid #ddd; color: #666; font-size: 0.9em;">
+        <p>&copy; 2026 Mahdi Rastegar</p>
+    </footer>
 </body>
 </html>

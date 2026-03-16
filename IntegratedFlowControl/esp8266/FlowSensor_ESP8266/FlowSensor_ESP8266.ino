@@ -6,8 +6,8 @@
 
 // Wi-Fi Configuration
 // UPDATE THESE WITH YOUR WIFI CREDENTIALS
-const char* WIFI_SSID = "YOUR_WIFI_SSID";
-const char* WIFI_PASS = "YOUR_WIFI_PASSWORD";
+const char* WIFI_SSID = "AC-IoT-Cudy-18DC";
+const char* WIFI_PASS = "31185981";
 const char* MDNS_HOST = "flowssensors";
 
 // Global sensor enabled state (referenced by sensors.h and web.h)

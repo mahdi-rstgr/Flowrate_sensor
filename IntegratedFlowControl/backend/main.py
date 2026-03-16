@@ -3,6 +3,11 @@
 Integrated Flow Control System - Main Flask Backend
 Combines flow sensor monitoring (ESP8266) with pump control (Arduino)
 Provides unified web interface for both systems
+
+QUICK SETUP:
+1. If ESP8266 connection fails, edit line 26: ESP8266_IP = "192.168.1.XXX"
+2. Replace XXX with your ESP8266's actual IP address
+3. Save and restart the system
 """
 
 from flask import Flask, request, jsonify, send_from_directory
@@ -29,7 +34,17 @@ CORS(app)  # Enable CORS for all routes
 serial_handler = SerialHandler()
 esp8266_handler = ESP8266Handler()
 
-# Configuration
+# ============================================================================
+# CONFIGURATION - Modify these settings as needed
+# ============================================================================
+
+# ESP8266 Configuration
+# ENTER YOUR ESP8266 IP ADDRESS HERE:
+# Set ESP8266_IP to your manual IP address (e.g., "192.168.1.100")
+# Leave as None to use automatic discovery
+ESP8266_IP = "192.168.10.150"  # Change this to your ESP8266's IP address, like: "192.168.1.100"
+
+# General Configuration
 FRONTEND_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'frontend')
 DEFAULT_PORT = 5000
 
@@ -449,11 +464,27 @@ def main():
     
     # Initialize ESP8266 connection
     print("\n[2] Connecting to ESP8266 (Flow Sensors)...")
-    if esp8266_handler.discover_and_connect():
-        print(f"✓ ESP8266 connected at {esp8266_handler.get_ip_address()}")
+    
+    if ESP8266_IP:
+        # Use manual IP address
+        print(f"Using manual IP address: {ESP8266_IP}")
+        if esp8266_handler.connect(ESP8266_IP):
+            print(f"✓ ESP8266 connected at {esp8266_handler.get_ip_address()}")
+        else:
+            print(f"✗ Failed to connect to ESP8266 at {ESP8266_IP}")
+            print("  Check that the ESP8266 is powered on and connected to your network.")
+            print("  Verify the IP address is correct in the configuration section.")
+            print("  You can find your ESP8266's IP on your router's admin page or by")
+            print("  connecting to its serial console during boot.")
     else:
-        print("✗ Warning: ESP8266 not found")
-        print("  The web interface will still start, but sensor monitoring will not work.")
+        # Use automatic discovery
+        print("Auto-discovering ESP8266...")
+        if esp8266_handler.discover_and_connect():
+            print(f"✓ ESP8266 connected at {esp8266_handler.get_ip_address()}")
+        else:
+            print("✗ Warning: ESP8266 not found")
+            print("  The web interface will still start, but sensor monitoring will not work.")
+            print("  To fix: Set ESP8266_IP in main.py to your ESP8266's IP address.")
     
     # Check frontend files
     print("\n[3] Checking frontend files...")
