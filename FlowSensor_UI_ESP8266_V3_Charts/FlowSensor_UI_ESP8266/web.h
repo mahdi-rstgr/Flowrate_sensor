@@ -364,7 +364,7 @@ static const char _PAGE_INDEX[] PROGMEM = R"HTML(<!DOCTYPE html>
 </head>
 <body>
     <div class="container">
-        <h1>Flow Sensors Dashboard</h1>
+        <h1>In-Line Pump-Viscometer</h1>
         
         <div class="view-controls">
             <div class="view-toggle">
@@ -393,7 +393,6 @@ static const char _PAGE_INDEX[] PROGMEM = R"HTML(<!DOCTYPE html>
                     </div>
                 </div>
                 <div class="chart-container">
-                    <div class="chart-title">Flow vs Sample Number - Sensor 1</div>
                     <canvas id="chart1"></canvas>
                 </div>
                 <div class="table-container">
@@ -428,7 +427,6 @@ static const char _PAGE_INDEX[] PROGMEM = R"HTML(<!DOCTYPE html>
                     </div>
                 </div>
                 <div class="chart-container">
-                    <div class="chart-title">Flow vs Sample Number - Sensor 2</div>
                     <canvas id="chart2"></canvas>
                 </div>
                 <div class="table-container">
@@ -463,7 +461,6 @@ static const char _PAGE_INDEX[] PROGMEM = R"HTML(<!DOCTYPE html>
                     </div>
                 </div>
                 <div class="chart-container">
-                    <div class="chart-title">Flow vs Sample Number - Sensor 3</div>
                     <canvas id="chart3"></canvas>
                 </div>
                 <div class="table-container">
@@ -498,7 +495,6 @@ static const char _PAGE_INDEX[] PROGMEM = R"HTML(<!DOCTYPE html>
                     </div>
                 </div>
                 <div class="chart-container">
-                    <div class="chart-title">Flow vs Sample Number - Sensor 4</div>
                     <canvas id="chart4"></canvas>
                 </div>
                 <div class="table-container">
@@ -540,7 +536,7 @@ static const char _PAGE_INDEX[] PROGMEM = R"HTML(<!DOCTYPE html>
         </div>
 
         <div class="footer">
-            Served by ESP8266 • Enhanced with Charts
+            Acceleration Cosortium - SDL5 - Formulation • Mahdi Rastegar
         </div>
     </div>
 
@@ -594,7 +590,7 @@ static const char _PAGE_INDEX[] PROGMEM = R"HTML(<!DOCTYPE html>
                             x: {
                                 title: {
                                     display: true,
-                                    text: 'Sample Number',
+                                    text: 'Time (s)',
                                     color: '#1976d2'
                                 },
                                 grid: {

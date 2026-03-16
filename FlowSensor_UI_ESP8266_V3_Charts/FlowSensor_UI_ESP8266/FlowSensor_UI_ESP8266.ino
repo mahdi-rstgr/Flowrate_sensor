@@ -48,12 +48,21 @@ static bool s_ok[NUM_SENSORS] = {false};
 // CV guard threshold (mL/min)
 static const float CV_MEAN_EPS = 0.02f;
 
-// Recording to CSV
+// Binary record structure for efficient storage
+struct SensorRecord {
+  float time_s;                    // 4 bytes
+  float flow[NUM_SENSORS];        // 16 bytes (4 sensors × 4 bytes)
+  float temp[NUM_SENSORS];        // 16 bytes (4 sensors × 4 bytes) 
+  uint8_t enabled_mask;           // 1 byte for enabled sensors bitmask
+};  // Total: 37 bytes per record vs ~60 bytes for CSV
+
+// Recording to Binary
+// Recording to Binary
 static bool recording   = false;
-static bool csv_ready   = false;
+static bool data_ready  = false;
 static unsigned long run_start_ms  = 0;
 static unsigned long last_record_ms = 0;
-static const unsigned long RECORD_MS = 500;  // 0.5 s
+static const unsigned long RECORD_MS = 1000;  // 1.0 s
 
 // Which sensors are recorded (snapshot at start_run)
 static bool record_mask[NUM_SENSORS] = { true, true, true, true };
@@ -185,7 +194,7 @@ static bool check_storage_available() {
   return true;
 }
 
-// Recording 0.5 s to LittleFS 
+// Recording 1.0 s to LittleFS (Binary Format)
 void start_run() {
   // Check storage availability
   if (!check_storage_available()) {
@@ -198,31 +207,25 @@ void start_run() {
     record_mask[i] = sensor_enabled[i];
   }
 
-  LittleFS.remove("/last_run.csv");
-  File f = LittleFS.open("/last_run.csv", "w");
+  // Create/clear binary data file
+  LittleFS.remove("/data.bin");
+  File f = LittleFS.open("/data.bin", "w");
   if (f) {
-    // Always write header for all 4 sensors
-    f.print("time_s");
-    for (int i = 0; i < NUM_SENSORS; i++) {
-      int sn = i + 1;
-      f.printf(",s%d_flow_ml_min,s%d_temp_c", sn, sn);
-    }
-    f.println();
     f.close();
   }
 
-  csv_ready   = false;
+  data_ready  = false;
   recording   = true;
   run_start_ms = millis();
   last_record_ms = 0;
 
-  Serial.println("[run] START recording");
+  Serial.println("[run] START recording (binary format)");
 }
 
 void stop_run() {
   recording = false;
-  csv_ready = true; // file has data
-  Serial.println("[run] STOP recording; CSV ready");
+  data_ready = true; // binary file has data
+  Serial.println("[run] STOP recording; Binary data ready");
 }
 
 static void record_if_due() {
@@ -242,7 +245,7 @@ static void record_if_due() {
   if (now - last_record_ms < RECORD_MS) return;
   last_record_ms = now;
 
-  int n = min(buf_count, 10); // ~0.5 s @ 20 Hz
+  int n = min(buf_count, 20); // ~1.0 s @ 20 Hz
   if (n == 0) return;
   
   double f_avg[NUM_SENSORS] = {0};
@@ -260,18 +263,23 @@ static void record_if_due() {
 
   float t_s = (now - run_start_ms) / 1000.0f;
 
-  File f = LittleFS.open("/last_run.csv", "a");
-  if (f) {
-    f.printf("%.1f", t_s);
-    for (int i = 0; i < NUM_SENSORS; i++) {
-      // Write all 4 sensors, but use empty cells if disabled at start
-      if (record_mask[i]) {
-        f.printf(",%.3f,%.1f", f_avg[i], t_avg[i]);
-      } else {
-        f.print(",,");  // Empty cells for disabled sensor
-      }
+  // Create binary record
+  SensorRecord record;
+  record.time_s = t_s;
+  record.enabled_mask = 0;
+  
+  for (int i = 0; i < NUM_SENSORS; i++) {
+    record.flow[i] = f_avg[i];
+    record.temp[i] = t_avg[i];
+    if (record_mask[i]) {
+      record.enabled_mask |= (1 << i);
     }
-    f.println();
+  }
+
+  // Write binary record
+  File f = LittleFS.open("/data.bin", "a");
+  if (f) {
+    f.write((uint8_t*)&record, sizeof(record));
     f.close();
   }
 }
@@ -289,20 +297,42 @@ void get_ui_snapshot(
     s_ok_out[i] = s_ok[i];
   }
   is_recording = recording; 
-  is_csv_ready = csv_ready;
+  is_csv_ready = data_ready;
 }
 
 bool stream_csv_to_client(ESP8266WebServer& server) {
-  File f = LittleFS.open("/last_run.csv", "r");
+  File f = LittleFS.open("/data.bin", "r");
   if (!f) return false;
+  
   server.setContentLength(CONTENT_LENGTH_UNKNOWN);
   server.sendHeader("Content-Disposition", "attachment; filename=flow_data.csv");
   server.send(200, "text/csv", "");
-  while (f.available()) {
-    uint8_t buf[512];
-    size_t n = f.read(buf, sizeof(buf));
-    server.sendContent_P((const char*)buf, n);
-    yield();
+  
+  // Send CSV header
+  String header = "time_s";
+  for (int i = 0; i < NUM_SENSORS; i++) {
+    int sn = i + 1;
+    header += ",s" + String(sn) + "_flow_ml_min,s" + String(sn) + "_temp_c";
+  }
+  header += "\n";
+  server.sendContent(header);
+  
+  // Read binary records and convert to CSV
+  SensorRecord record;
+  while (f.readBytes((char*)&record, sizeof(record)) == sizeof(record)) {
+    String csvLine = String(record.time_s, 1);
+    
+    for (int i = 0; i < NUM_SENSORS; i++) {
+      // Check if sensor was enabled when recorded
+      if (record.enabled_mask & (1 << i)) {
+        csvLine += "," + String(record.flow[i], 2) + "," + String(record.temp[i], 1);
+      } else {
+        csvLine += ",,";  // Empty cells for disabled sensor
+      }
+    }
+    csvLine += "\n";
+    server.sendContent(csvLine);
+    yield(); // Allow ESP8266 to handle other tasks
   }
   f.close();
   return true;
