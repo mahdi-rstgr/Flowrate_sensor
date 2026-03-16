@@ -375,10 +375,10 @@ static const char _PAGE_INDEX[] PROGMEM = R"HTML(<!DOCTYPE html>
         </div>
         
         <div class="sensors-grid" id="sensorsGrid">
-            <!-- Sensor 1 -->
+            <!-- Sensor X -->
             <div class="sensor-card" id="sensor1">
                 <div class="sensor-header">
-                    <span class="sensor-title">SENSOR 1</span>
+                    <span class="sensor-title">SENSOR X</span>
                 </div>
                 <div class="sensor-info">
                     <span class="info-badge">Temp: <span id="temp1">--</span> °C</span>
@@ -409,10 +409,10 @@ static const char _PAGE_INDEX[] PROGMEM = R"HTML(<!DOCTYPE html>
                 </div>
             </div>
 
-            <!-- Sensor 2 -->
+            <!-- Sensor Y -->
             <div class="sensor-card" id="sensor2">
                 <div class="sensor-header">
-                    <span class="sensor-title">SENSOR 2</span>
+                    <span class="sensor-title">SENSOR Y</span>
                 </div>
                 <div class="sensor-info">
                     <span class="info-badge">Temp: <span id="temp2">--</span> °C</span>
@@ -443,10 +443,10 @@ static const char _PAGE_INDEX[] PROGMEM = R"HTML(<!DOCTYPE html>
                 </div>
             </div>
 
-            <!-- Sensor 3 -->
+            <!-- Sensor Z -->
             <div class="sensor-card" id="sensor3">
                 <div class="sensor-header">
-                    <span class="sensor-title">SENSOR 3</span>
+                    <span class="sensor-title">SENSOR Z</span>
                 </div>
                 <div class="sensor-info">
                     <span class="info-badge">Temp: <span id="temp3">--</span> °C</span>
@@ -477,10 +477,10 @@ static const char _PAGE_INDEX[] PROGMEM = R"HTML(<!DOCTYPE html>
                 </div>
             </div>
 
-            <!-- Sensor 4 -->
+            <!-- Sensor A -->
             <div class="sensor-card" id="sensor4">
                 <div class="sensor-header">
-                    <span class="sensor-title">SENSOR 4</span>
+                    <span class="sensor-title">SENSOR A</span>
                 </div>
                 <div class="sensor-info">
                     <span class="info-badge">Temp: <span id="temp4">--</span> °C</span>
