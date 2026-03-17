@@ -134,41 +134,98 @@ class ESP8266Handler:
     def start_recording(self) -> bool:
         """Start recording on ESP8266"""
         if not self.base_url:
-            logger.error("ESP8266 not connected")
+            logger.error("ESP8266 not connected - cannot start recording")
             return False
         
         try:
-            response = requests.post(f"{self.base_url}/start", timeout=self.timeout)
-            return response.status_code == 200
-        except requests.RequestException as e:
-            logger.error(f"Failed to start recording: {str(e)}")
+            # Try multiple endpoints that might work on different ESP8266 firmware versions
+            endpoints_to_try = [
+                f"{self.base_url}/start",
+                f"{self.base_url}/api/start-recording", 
+                f"{self.base_url}/record/start"
+            ]
+            
+            for endpoint in endpoints_to_try:
+                try:
+                    logger.info(f"Trying to start recording at: {endpoint}")
+                    response = requests.post(endpoint, timeout=self.timeout)
+                    if response.status_code == 200:
+                        logger.info(f"Recording started successfully via {endpoint}")
+                        return True
+                except requests.RequestException as e:
+                    logger.debug(f"Failed to start recording at {endpoint}: {e}")
+                    continue
+            
+            logger.error("Failed to start recording on all attempted endpoints")
+            return False
+            
+        except Exception as e:
+            logger.error(f"Unexpected error starting recording: {str(e)}")
             return False
     
     def stop_recording(self) -> bool:
         """Stop recording on ESP8266"""
         if not self.base_url:
-            logger.error("ESP8266 not connected")
+            logger.error("ESP8266 not connected - cannot stop recording")
             return False
         
         try:
-            response = requests.post(f"{self.base_url}/stop", timeout=self.timeout)
-            return response.status_code == 200
-        except requests.RequestException as e:
-            logger.error(f"Failed to stop recording: {str(e)}")
+            # Try multiple endpoints that might work on different ESP8266 firmware versions
+            endpoints_to_try = [
+                f"{self.base_url}/stop",
+                f"{self.base_url}/api/stop-recording",
+                f"{self.base_url}/record/stop"
+            ]
+            
+            for endpoint in endpoints_to_try:
+                try:
+                    logger.info(f"Trying to stop recording at: {endpoint}")
+                    response = requests.post(endpoint, timeout=self.timeout)
+                    if response.status_code == 200:
+                        logger.info(f"Recording stopped successfully via {endpoint}")
+                        return True
+                except requests.RequestException as e:
+                    logger.debug(f"Failed to stop recording at {endpoint}: {e}")
+                    continue
+            
+            logger.error("Failed to stop recording on all attempted endpoints")
+            return False
+            
+        except Exception as e:
+            logger.error(f"Unexpected error stopping recording: {str(e)}")
             return False
     
     def download_csv(self) -> Optional[str]:
         """Download CSV data from ESP8266"""
         if not self.base_url:
-            logger.error("ESP8266 not connected")
+            logger.error("ESP8266 not connected - cannot download CSV")
             return None
         
         try:
-            response = requests.get(f"{self.base_url}/log.csv", timeout=10)
-            response.raise_for_status()
-            return response.text
-        except requests.RequestException as e:
-            logger.error(f"Failed to download CSV: {str(e)}")
+            # Try multiple endpoints for CSV download
+            endpoints_to_try = [
+                f"{self.base_url}/log.csv",
+                f"{self.base_url}/data.csv", 
+                f"{self.base_url}/download/csv",
+                f"{self.base_url}/api/download-csv"
+            ]
+            
+            for endpoint in endpoints_to_try:
+                try:
+                    logger.info(f"Trying to download CSV from: {endpoint}")
+                    response = requests.get(endpoint, timeout=10)
+                    if response.status_code == 200 and len(response.text) > 0:
+                        logger.info(f"CSV downloaded successfully from {endpoint} ({len(response.text)} bytes)")
+                        return response.text
+                except requests.RequestException as e:
+                    logger.debug(f"Failed to download CSV from {endpoint}: {e}")
+                    continue
+            
+            logger.error("Failed to download CSV from all attempted endpoints")
+            return None
+            
+        except Exception as e:
+            logger.error(f"Unexpected error downloading CSV: {str(e)}")
             return None
     
     def toggle_sensor(self, sensor_id: int, enabled: bool) -> bool:

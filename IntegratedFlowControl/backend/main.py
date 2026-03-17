@@ -38,11 +38,11 @@ esp8266_handler = ESP8266Handler()
 # CONFIGURATION - Modify these settings as needed
 # ============================================================================
 
-# ESP8266 Configuration
-# ENTER YOUR ESP8266 IP ADDRESS HERE:
-# Set ESP8266_IP to your manual IP address (e.g., "192.168.1.100")
-# Leave as None to use automatic discovery
-ESP8266_IP = "192.168.10.150"  # Change this to your ESP8266's IP address, like: "192.168.1.100"
+# ESP8266 Configuration for Raspberry Pi 5.0
+# ESP8266 communicates via WiFi/HTTP (connected to /dev/ttyUSB0 for programming only)
+# Arduino Uno communicates via serial on /dev/ttyACM0
+# Set ESP8266_IP to your ESP8266's IP address on your WiFi network
+ESP8266_IP = None  # Set to your ESP8266's IP address, like: "192.168.1.100"
 
 # General Configuration
 FRONTEND_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'frontend')
@@ -359,6 +359,118 @@ def get_pump_status():
 # SYSTEM STATUS ENDPOINTS
 # =============================================================================
 
+@app.route('/api/system/network-info', methods=['GET'])
+def get_network_info():
+    """Get network information for accessing the system from other devices"""
+    try:
+        import socket
+        
+        network_info = {
+            'hostname': socket.gethostname(),
+            'local_urls': [],
+            'port': DEFAULT_PORT
+        }
+        
+        # Get all network interfaces
+        try:
+            # Get local IP address
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("8.8.8.8", 80))
+            local_ip = s.getsockname()[0]
+            s.close()
+            network_info['local_urls'].append(f"http://{local_ip}:{DEFAULT_PORT}")
+        except Exception:
+            pass
+        
+        # Alternative method to get IP
+        try:
+            local_ip = socket.gethostbyname(socket.gethostname())
+            if local_ip not in [url.split('//')[-1].split(':')[0] for url in network_info['local_urls']]:
+                network_info['local_urls'].append(f"http://{local_ip}:{DEFAULT_PORT}")
+        except Exception:
+            pass
+        
+        # Add localhost
+        network_info['local_urls'].append(f"http://localhost:{DEFAULT_PORT}")
+        
+        return jsonify({
+            'success': True,
+            'network_info': network_info,
+            'instructions': 'Share any of the network URLs with other devices on the same WiFi network'
+        })
+    except Exception as e:
+        logger.error(f"Error getting network info: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/system/esp8266-debug', methods=['GET'])
+def debug_esp8266():
+    """Get detailed ESP8266 connection debug information"""
+    try:
+        debug_info = {
+            'configured_ip': ESP8266_IP,
+            'current_ip': esp8266_handler.get_ip_address(),
+            'base_url': esp8266_handler.base_url,
+            'is_connected': esp8266_handler.is_connected(),
+            'endpoints_tested': [],
+            'sensor_data_test': None,
+            'recording_endpoints_test': {}
+        }
+        
+        # Test basic connectivity
+        if esp8266_handler.base_url:
+            # Test different endpoints
+            test_endpoints = ['/api', '/status', '/', '/info']
+            for endpoint in test_endpoints:
+                try:
+                    import requests
+                    response = requests.get(f"{esp8266_handler.base_url}{endpoint}", timeout=2)
+                    debug_info['endpoints_tested'].append({
+                        'endpoint': endpoint,
+                        'status_code': response.status_code,
+                        'response_length': len(response.text)
+                    })
+                except Exception as e:
+                    debug_info['endpoints_tested'].append({
+                        'endpoint': endpoint,
+                        'error': str(e)
+                    })
+            
+            # Test sensor data
+            try:
+                sensor_data = esp8266_handler.get_sensor_data()
+                debug_info['sensor_data_test'] = 'Success'
+            except Exception as e:
+                debug_info['sensor_data_test'] = f'Error: {str(e)}'
+            
+            # Test recording endpoints
+            recording_test_endpoints = ['/start', '/stop', '/api/start-recording', '/api/stop-recording', '/record/start', '/record/stop']
+            for endpoint in recording_test_endpoints:
+                try:
+                    response = requests.get(f"{esp8266_handler.base_url}{endpoint}", timeout=2)
+                    debug_info['recording_endpoints_test'][endpoint] = {
+                        'status_code': response.status_code,
+                        'accessible': True
+                    }
+                except Exception as e:
+                    debug_info['recording_endpoints_test'][endpoint] = {
+                        'error': str(e),
+                        'accessible': False
+                    }
+        
+        return jsonify({
+            'success': True,
+            'debug_info': debug_info
+        })
+    except Exception as e:
+        logger.error(f"Error in ESP8266 debug: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 @app.route('/api/system/status', methods=['GET'])
 def get_system_status():
     """Get overall system status (Arduino + ESP8266 connectivity)"""
@@ -457,9 +569,9 @@ def main():
     # Initialize Arduino connection
     print("\n[1] Connecting to Arduino (Pump Controller)...")
     if serial_handler.connect():
-        print(f"✓ Arduino connected on {serial_handler.get_port_info()}")
+        print(f"OK: Arduino connected on {serial_handler.get_port_info()}")
     else:
-        print("✗ Warning: Arduino not connected")
+        print("WARNING: Arduino not connected")
         print("  The web interface will still start, but pump control will not work.")
     
     # Initialize ESP8266 connection
@@ -469,9 +581,9 @@ def main():
         # Use manual IP address
         print(f"Using manual IP address: {ESP8266_IP}")
         if esp8266_handler.connect(ESP8266_IP):
-            print(f"✓ ESP8266 connected at {esp8266_handler.get_ip_address()}")
+            print(f"OK: ESP8266 connected at {esp8266_handler.get_ip_address()}")
         else:
-            print(f"✗ Failed to connect to ESP8266 at {ESP8266_IP}")
+            print(f"ERROR: Failed to connect to ESP8266 at {ESP8266_IP}")
             print("  Check that the ESP8266 is powered on and connected to your network.")
             print("  Verify the IP address is correct in the configuration section.")
             print("  You can find your ESP8266's IP on your router's admin page or by")
@@ -480,9 +592,9 @@ def main():
         # Use automatic discovery
         print("Auto-discovering ESP8266...")
         if esp8266_handler.discover_and_connect():
-            print(f"✓ ESP8266 connected at {esp8266_handler.get_ip_address()}")
+            print(f"OK: ESP8266 connected at {esp8266_handler.get_ip_address()}")
         else:
-            print("✗ Warning: ESP8266 not found")
+            print("WARNING: ESP8266 not found")
             print("  The web interface will still start, but sensor monitoring will not work.")
             print("  To fix: Set ESP8266_IP in main.py to your ESP8266's IP address.")
     
@@ -490,14 +602,27 @@ def main():
     print("\n[3] Checking frontend files...")
     index_path = os.path.join(FRONTEND_DIR, 'index.html')
     if not os.path.exists(index_path):
-        print(f"✗ Warning: Frontend files not found at {FRONTEND_DIR}")
+        print(f"WARNING: Frontend files not found at {FRONTEND_DIR}")
         print("  Ensure the frontend files are in the correct directory.")
     else:
-        print(f"✓ Frontend files found at {FRONTEND_DIR}")
+        print(f"OK: Frontend files found at {FRONTEND_DIR}")
     
     print("\n" + "=" * 60)
-    print(f"Starting web server on http://localhost:{DEFAULT_PORT}")
-    print("Access the unified dashboard at: http://localhost:5000")
+    print(f"Starting web server on all network interfaces")
+    print(f"Local access: http://localhost:{DEFAULT_PORT}")
+    
+    # Get local IP addresses for network access
+    try:
+        import socket
+        hostname = socket.gethostname()
+        local_ip = socket.gethostbyname(hostname)
+        print(f"Network access: http://{local_ip}:{DEFAULT_PORT}")
+        print(f"From other devices on WiFi: http://{local_ip}:{DEFAULT_PORT}")
+    except Exception:
+        print("Network access: http://[RASPBERRY_PI_IP]:5000")
+        print("  (Replace [RASPBERRY_PI_IP] with your Pi's IP address)")
+    
+    print("Access from any device on the same WiFi network!")
     print("Press Ctrl+C to stop the server")
     print("=" * 60)
     
@@ -510,9 +635,9 @@ def main():
             threaded=True
         )
     except KeyboardInterrupt:
-        print("\n\n✓ Server stopped by user")
+        print("\n\nSYSTEM STOPPED: Server stopped by user")
     except Exception as e:
-        print(f"\n✗ Error starting server: {e}")
+        print(f"\nERROR: Error starting server: {e}")
     finally:
         # Clean up connections
         print("\n[Cleanup] Disconnecting from hardware...")

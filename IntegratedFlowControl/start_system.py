@@ -13,11 +13,11 @@ def check_python_version():
     """Check if Python version is compatible"""
     version = sys.version_info
     if version.major < 3 or (version.major == 3 and version.minor < 6):
-        print("❌ Error: Python 3.6+ required")
+        print("ERROR: Python 3.6+ required")
         print(f"Current version: {version.major}.{version.minor}.{version.micro}")
         print("Please install a newer version of Python")
         return False
-    print(f"✓ Python {version.major}.{version.minor}.{version.micro} - OK")
+    print(f"OK: Python {version.major}.{version.minor}.{version.micro} - OK")
     return True
 
 def check_dependencies():
@@ -33,13 +33,13 @@ def check_dependencies():
                 import serial
             else:
                 __import__(package)
-            print(f"✓ {package} - OK")
+            print(f"OK: {package} - OK")
         except ImportError:
             missing_packages.append(package)
-            print(f"❌ {package} - Missing")
+            print(f"MISSING: {package} - Missing")
     
     if missing_packages:
-        print(f"\n📦 Installing missing packages...")
+        print(f"\nInstalling missing packages...")
         try:
             # Map package names to pip install names
             pip_names = {
@@ -50,10 +50,10 @@ def check_dependencies():
             for package in missing_packages:
                 pip_name = pip_names.get(package, package)
                 subprocess.check_call([sys.executable, '-m', 'pip', 'install', pip_name])
-                print(f"✓ Installed {package}")
+                print(f"INSTALLED: {package}")
             return True
         except subprocess.CalledProcessError:
-            print("❌ Failed to install dependencies automatically")
+            print("ERROR: Failed to install dependencies automatically")
             print("Please run manually: pip install flask flask-cors pyserial requests")
             return False
     return True
@@ -79,13 +79,13 @@ def check_file_structure():
     for file_path in required_files:
         full_path = os.path.join(script_dir, file_path)
         if os.path.exists(full_path):
-            print(f"✓ {file_path}")
+            print(f"OK: {file_path}")
         else:
             missing_files.append(file_path)
-            print(f"❌ {file_path}")
+            print(f"MISSING: {file_path}")
     
     if missing_files:
-        print(f"\n❌ Missing {len(missing_files)} required files:")
+        print(f"\nERROR: Missing {len(missing_files)} required files:")
         for file_path in missing_files:
             print(f"   {file_path}")
         print("\nPlease ensure all system files are in the correct locations.")
@@ -99,7 +99,7 @@ def start_system():
     backend_dir = os.path.join(script_dir, 'backend')
     main_script = os.path.join(backend_dir, 'main.py')
     
-    print("\n🚀 Starting Integrated Flow Control System...")
+    print("\nStarting Integrated Flow Control System...")
     print("=" * 60)
     
     try:
@@ -110,15 +110,15 @@ def start_system():
         subprocess.run([sys.executable, 'main.py'])
         
     except KeyboardInterrupt:
-        print("\n\n✓ System stopped by user")
+        print("\n\nSYSTEM STOPPED: System stopped by user")
     except FileNotFoundError:
-        print(f"❌ Could not find main.py at {main_script}")
+        print(f"ERROR: Could not find main.py at {main_script}")
     except Exception as e:
-        print(f"❌ Error starting system: {e}")
+        print(f"ERROR: Error starting system: {e}")
 
 def main():
     """Main startup function"""
-    print("🌊 Integrated Flow Control System - Quick Start")
+    print("Integrated Flow Control System - Quick Start")
     print("=" * 60)
     
     # System checks

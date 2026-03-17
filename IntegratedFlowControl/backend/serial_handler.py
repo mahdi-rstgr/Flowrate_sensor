@@ -63,14 +63,15 @@ class SerialHandler:
                 # We'll prefer the Arduino Uno, but this could be a fallback
                 return port.device
         
-        # Raspberry Pi specific port patterns
+        # Raspberry Pi 5.0 specific port patterns for this system
+        # /dev/ttyACM0 = Arduino Uno (pump controller)
+        # /dev/ttyUSB0 = ESP8266 (flow sensors) - handled by ESP8266Handler
         rpi_arduino_ports = [
-            '/dev/ttyACM0',    # Most common for Arduino Uno on Raspberry Pi
-            '/dev/ttyACM1',
-            '/dev/ttyUSB0',    # Common for CH340 devices
-            '/dev/ttyUSB1',
+            '/dev/ttyACM0',    # Primary Arduino Uno port for Raspberry Pi 5.0
+            '/dev/ttyACM1',    # Backup Arduino port
             '/dev/serial/by-id/usb-Arduino__www.arduino.cc__0043_*',  # Arduino by ID
-            '/dev/serial/by-id/usb-1a86_USB2.0-Serial-*',            # CH340 by ID
+            '/dev/ttyUSB1',    # Fallback for other USB-Serial adapters
+            '/dev/serial/by-id/usb-1a86_USB2.0-Serial-*',            # CH340 by ID (fallback)
         ]
         
         # Try Raspberry Pi specific ports
