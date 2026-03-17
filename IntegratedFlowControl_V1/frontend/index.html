@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flow Control System</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>Flow Control System</h1>
+            <div class="system-status-bar">
+                <div class="status-item">
+                    <span class="status-dot" id="arduinoStatus"></span>
+                    <span>Arduino: <span id="arduinoStatusText">Checking...</span></span>
+                </div>
+                <div class="status-item">
+                    <span class="status-dot" id="esp8266Status"></span>
+                    <span>ESP8266: <span id="esp8266StatusText">Checking...</span></span>
+                </div>
+                <div class="status-item">
+                    <span>Last Update: <span id="lastUpdate">--:--:--</span></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="tab-navigation">
+            <button class="tab-button active" data-tab="overview">Overview</button>
+            <button class="tab-button" data-tab="sensors">Flow Sensors</button>
+            <button class="tab-button" data-tab="pumps">Pump Control</button>
+            <button class="tab-button" data-tab="data">Data Management</button>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="tab-content">
+            <!-- Overview Tab -->
+            <div id="overview" class="tab-panel active">
+                <div class="overview-grid">
+                    <!-- Sensor Overview -->
+                    <div class="panel">
+                        <h2>Flow Sensors Status</h2>
+                        <div class="sensor-overview">
+                            <div class="sensor-grid">
+                                <div class="sensor-card" data-sensor="1">
+                                    <h4>Sensor 1</h4>
+                                    <div class="sensor-value">
+                                        <span id="sensor1Flow">--</span> <small>mL/min</small>
+                                    </div>
+                                    <div class="sensor-status" id="sensor1Status">--</div>
+                                </div>
+                                <div class="sensor-card" data-sensor="2">
+                                    <h4>Sensor 2</h4>
+                                    <div class="sensor-value">
+                                        <span id="sensor2Flow">--</span> <small>mL/min</small>
+                                    </div>
+                                    <div class="sensor-status" id="sensor2Status">--</div>
+                                </div>
+                                <div class="sensor-card" data-sensor="3">
+                                    <h4>Sensor 3</h4>
+                                    <div class="sensor-value">
+                                        <span id="sensor3Flow">--</span> <small>mL/min</small>
+                                    </div>
+                                    <div class="sensor-status" id="sensor3Status">--</div>
+                                </div>
+                                <div class="sensor-card" data-sensor="4">
+                                    <h4>Sensor 4</h4>
+                                    <div class="sensor-value">
+                                        <span id="sensor4Flow">--</span> <small>mL/min</small>
+                                    </div>
+                                    <div class="sensor-status" id="sensor4Status">--</div>
+                                </div>
+                            </div>
+                            <div class="sensor-controls">
+                                <button class="btn btn-success" id="startRecording">Start Recording</button>
+                                <button class="btn btn-warning" id="stopRecording">Stop Recording</button>
+                                <span id="recordingStatus" class="recording-status">Not Recording</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pump Overview -->
+                    <div class="panel">
+                        <h2>Pump Control Status</h2>
+                        <div class="pump-overview">
+                            <div class="pump-grid">
+                                <div class="pump-card-mini" data-pump="1">
+                                    <h4>Pump 1</h4>
+                                    <div class="pump-status-indicator" id="pump1Status">Stopped</div>
+                                    <button class="btn btn-sm" id="quickStart1">Quick Start</button>
+                                </div>
+                                <div class="pump-card-mini" data-pump="2">
+                                    <h4>Pump 2</h4>
+                                    <div class="pump-status-indicator" id="pump2Status">Stopped</div>
+                                    <button class="btn btn-sm" id="quickStart2">Quick Start</button>
+                                </div>
+                                <div class="pump-card-mini" data-pump="3">
+                                    <h4>Pump 3</h4>
+                                    <div class="pump-status-indicator" id="pump3Status">Stopped</div>
+                                    <button class="btn btn-sm" id="quickStart3">Quick Start</button>
+                                </div>
+                                <div class="pump-card-mini" data-pump="4">
+                                    <h4>Pump 4</h4>
+                                    <div class="pump-status-indicator" id="pump4Status">Stopped</div>
+                                    <button class="btn btn-sm" id="quickStart4">Quick Start</button>
+                                </div>
+                            </div>
+                            <div class="emergency-section">
+                                <button class="btn btn-emergency" id="emergencyStop">EMERGENCY STOP</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Real-time Chart -->
+                    <div class="panel full-width">
+                        <h2>Real-time Flow Monitoring</h2>
+                        <div class="chart-container">
+                            <canvas id="overviewChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sensors Tab -->
+            <div id="sensors" class="tab-panel">
+                <div class="sensors-content">
+                    <!-- Sensor Controls -->
+                    <div class="panel">
+                        <h2>Flow Sensor Controls</h2>
+                        <div class="sensor-controls-grid">
+                            <div class="control-group">
+                                <label>Recording Control:</label>
+                                <div class="button-group">
+                                    <button class="btn btn-success" id="startRecording2">Start Recording</button>
+                                    <button class="btn btn-warning" id="stopRecording2">Stop Recording</button>
+                                    <button class="btn btn-info" id="downloadData">Download CSV</button>
+                                </div>
+                                <div id="recordingStatus2" class="status-text">Not Recording</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Detailed Charts -->
+                    <div class="panel">
+                        <h2>Flow Rate Charts</h2>
+                        <div class="chart-container">
+                            <canvas id="flowChart"></canvas>
+                        </div>
+                    </div>
+                    <!-- Individual Sensor Charts -->
+                    <div class="panel">
+                        <h2>Individual Sensor Flow Charts</h2>
+                        <div class="individual-charts-grid">
+                            <div class="individual-chart">
+                                <h3>Sensor 1 Flow Rate</h3>
+                                <div class="chart-container">
+                                    <canvas id="sensor1Chart"></canvas>
+                                </div>
+                            </div>
+                            <div class="individual-chart">
+                                <h3>Sensor 2 Flow Rate</h3>
+                                <div class="chart-container">
+                                    <canvas id="sensor2Chart"></canvas>
+                                </div>
+                            </div>
+                            <div class="individual-chart">
+                                <h3>Sensor 3 Flow Rate</h3>
+                                <div class="chart-container">
+                                    <canvas id="sensor3Chart"></canvas>
+                                </div>
+                            </div>
+                            <div class="individual-chart">
+                                <h3>Sensor 4 Flow Rate</h3>
+                                <div class="chart-container">
+                                    <canvas id="sensor4Chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sensor Data Table -->
+                    <div class="panel">
+                        <h2>Live Sensor Data</h2>
+                        <div class="table-container">
+                            <table id="sensorDataTable">
+                                <thead>
+                                    <tr>
+                                        <th>Time</th>
+                                        <th>Sensor 1 Flow</th>
+                                        <th>Sensor 1 Temp</th>
+                                        <th>Sensor 2 Flow</th>
+                                        <th>Sensor 2 Temp</th>
+                                        <th>Sensor 3 Flow</th>
+                                        <th>Sensor 3 Temp</th>
+                                        <th>Sensor 4 Flow</th>
+                                        <th>Sensor 4 Temp</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Data rows will be added dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pumps Tab -->
+            <div id="pumps" class="tab-panel">
+                <div class="pumps-content">
+                    <!-- Multi-pump Controls -->
+                    <div class="panel">
+                        <h2>Multi-Pump Control</h2>
+                        <div class="multi-pump-controls">
+                            <div class="selection-controls">
+                                <label class="checkbox-container">
+                                    <input type="checkbox" id="selectAllPumps">
+                                    Select All
+                                </label>
+                                <label class="checkbox-container">
+                                    <input type="checkbox" id="selectPump1" class="pump-checkbox" data-pump="1">
+                                    Pump 1
+                                </label>
+                                <label class="checkbox-container">
+                                    <input type="checkbox" id="selectPump2" class="pump-checkbox" data-pump="2">
+                                    Pump 2
+                                </label>
+                                <label class="checkbox-container">
+                                    <input type="checkbox" id="selectPump3" class="pump-checkbox" data-pump="3">
+                                    Pump 3
+                                </label>
+                                <label class="checkbox-container">
+                                    <input type="checkbox" id="selectPump4" class="pump-checkbox" data-pump="4">
+                                    Pump 4
+                                </label>
+                            </div>
+                            <div class="action-buttons">
+                                <button class="btn btn-success" id="startSelectedPumps">Start Selected</button>
+                                <button class="btn btn-emergency" id="emergencyStop2">EMERGENCY STOP</button>
+                            </div>
+                            <div class="multi-pump-settings">
+                                <div class="input-group">
+                                    <label>Batch RPM:</label>
+                                    <input type="number" id="batchRpm" value="100" min="1" max="2000">
+                                </div>
+                                <div class="input-group">
+                                    <label>Batch Time (s):</label>
+                                    <input type="number" id="batchTime" value="10" min="1">
+                                </div>
+                                <div class="input-group">
+                                    <label class="checkbox-container">
+                                        <input type="checkbox" id="batchContinuous">
+                                        Continuous
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Individual Pump Controls -->
+                    <div class="pump-controls-grid">
+                        <!-- Pump 1 -->
+                        <div class="pump-card" data-pump="1">
+                            <div class="pump-header">
+                                <h3>Pump 1</h3>
+                                <div class="pump-status-indicator" id="detailedPump1Status">Stopped</div>
+                            </div>
+                            <div class="pump-controls">
+                                <div class="input-group">
+                                    <label>RPM:</label>
+                                    <input type="number" class="rpm-input" data-pump="1" value="100" min="1" max="2000">
+                                </div>
+                                <div class="input-group">
+                                    <label>Time (s):</label>
+                                    <input type="number" class="time-input" data-pump="1" value="10" min="1">
+                                </div>
+                                <div class="input-group">
+                                    <label class="checkbox-container">
+                                        <input type="checkbox" class="continuous-checkbox" data-pump="1">
+                                        Continuous
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="pump-actions">
+                                <button class="btn btn-success pump-start" data-pump="1">Start</button>
+                                <button class="btn btn-warning pump-stop" data-pump="1">Stop</button>
+                            </div>
+                        </div>
+
+                        <!-- Pump 2 -->
+                        <div class="pump-card" data-pump="2">
+                            <div class="pump-header">
+                                <h3>Pump 2</h3>
+                                <div class="pump-status-indicator" id="detailedPump2Status">Stopped</div>
+                            </div>
+                            <div class="pump-controls">
+                                <div class="input-group">
+                                    <label>RPM:</label>
+                                    <input type="number" class="rpm-input" data-pump="2" value="100" min="1" max="2000">
+                                </div>
+                                <div class="input-group">
+                                    <label>Time (s):</label>
+                                    <input type="number" class="time-input" data-pump="2" value="10" min="1">
+                                </div>
+                                <div class="input-group">
+                                    <label class="checkbox-container">
+                                        <input type="checkbox" class="continuous-checkbox" data-pump="2">
+                                        Continuous
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="pump-actions">
+                                <button class="btn btn-success pump-start" data-pump="2">Start</button>
+                                <button class="btn btn-warning pump-stop" data-pump="2">Stop</button>
+                            </div>
+                        </div>
+
+                        <!-- Pump 3 -->
+                        <div class="pump-card" data-pump="3">
+                            <div class="pump-header">
+                                <h3>Pump 3</h3>
+                                <div class="pump-status-indicator" id="detailedPump3Status">Stopped</div>
+                            </div>
+                            <div class="pump-controls">
+                                <div class="input-group">
+                                    <label>RPM:</label>
+                                    <input type="number" class="rpm-input" data-pump="3" value="100" min="1" max="2000">
+                                </div>
+                                <div class="input-group">
+                                    <label>Time (s):</label>
+                                    <input type="number" class="time-input" data-pump="3" value="10" min="1">
+                                </div>
+                                <div class="input-group">
+                                    <label class="checkbox-container">
+                                        <input type="checkbox" class="continuous-checkbox" data-pump="3">
+                                        Continuous
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="pump-actions">
+                                <button class="btn btn-success pump-start" data-pump="3">Start</button>
+                                <button class="btn btn-warning pump-stop" data-pump="3">Stop</button>
+                            </div>
+                        </div>
+
+                        <!-- Pump 4 -->
+                        <div class="pump-card" data-pump="4">
+                            <div class="pump-header">
+                                <h3>Pump 4</h3>
+                                <div class="pump-status-indicator" id="detailedPump4Status">Stopped</div>
+                            </div>
+                            <div class="pump-controls">
+                                <div class="input-group">
+                                    <label>RPM:</label>
+                                    <input type="number" class="rpm-input" data-pump="4" value="100" min="1" max="2000">
+                                </div>
+                                <div class="input-group">
+                                    <label>Time (s):</label>
+                                    <input type="number" class="time-input" data-pump="4" value="10" min="1">
+                                </div>
+                                <div class="input-group">
+                                    <label class="checkbox-container">
+                                        <input type="checkbox" class="continuous-checkbox" data-pump="4">
+                                        Continuous
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="pump-actions">
+                                <button class="btn btn-success pump-start" data-pump="4">Start</button>
+                                <button class="btn btn-warning pump-stop" data-pump="4">Stop</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Management Tab -->
+            <div id="data" class="tab-panel">
+                <div class="data-content">
+                    <div class="panel">
+                        <h2>Data Management</h2>
+                        <div class="data-controls">
+                            <div class="control-section">
+                                <h3>Data Export</h3>
+                                <button class="btn btn-info" id="downloadCsv">Download Flow Data CSV</button>
+                                <button class="btn btn-info" id="exportSystemReport">Export System Report</button>
+                                <div class="data-info">
+                                    <p>Download recorded flow sensor data and system logs for analysis.</p>
+                                </div>
+                            </div>
+                            
+                            <div class="control-section">
+                                <h3>Data Analysis</h3>
+                                <div class="analysis-grid">
+                                    <div class="stat-card">
+                                        <h4>Total Samples</h4>
+                                        <span class="stat-value" id="totalSamples">--</span>
+                                    </div>
+                                    <div class="stat-card">
+                                        <h4>Recording Duration</h4>
+                                        <span class="stat-value" id="recordingDuration">--</span>
+                                    </div>
+                                    <div class="stat-card">
+                                        <h4>Average Flow Rate</h4>
+                                        <span class="stat-value" id="avgFlowRate">-- mL/min</span>
+                                    </div>
+                                    <div class="stat-card">
+                                        <h4>Active Pumps</h4>
+                                        <span class="stat-value" id="activePumpCount">--</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    
+    <!-- Copyright -->
+    <footer style="text-align: center; padding: 20px; margin-top: 40px; border-top: 1px solid #ddd; color: #666; font-size: 0.9em;">
+        <p>&copy; Acceleratino Consortium - SDL5 - Mahdi Rastegar - 2026</p>
+    </footer>
+</body>
+</html>

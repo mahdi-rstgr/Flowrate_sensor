@@ -24,54 +24,126 @@ class ESP8266Handler:
     def discover_and_connect(self, ip_range_base="192.168.1.") -> bool:
         """
         Automatically discover ESP8266 on the network
-        Scans common IP ranges for ESP8266 web server
+        Enhanced discovery for Raspberry Pi with multiple methods
         """
         logger.info("Scanning for ESP8266 flow sensors...")
         
-        # Common IP addresses to try
-        common_ips = [
-            "192.168.1.100", "192.168.1.101", "192.168.1.102",
-            "192.168.1.150", "192.168.1.200", "192.168.1.201",
-            "192.168.0.100", "192.168.0.101", "192.168.0.102", 
-            "192.168.4.1",   # ESP8266 AP mode default
-            "10.0.0.100", "10.0.0.101", "10.0.0.102"
+        # Method 1: Try mDNS names first
+        mdns_names = [
+            "flowsensors.local",
+            "flowsensor.local", 
+            "esp8266.local",
+            "arduino.local"
         ]
         
-        # Try mDNS name first
-        try:
-            import socket
-            ip = socket.gethostbyname("flowssensors.local")
-            if self._test_esp8266_connection(ip):
-                self.ip_address = ip
-                self.base_url = f"http://{ip}:{self.port}"
-                logger.info(f"ESP8266 found via mDNS at {ip}")
-                return True
-        except:
-            pass
+        for mdns_name in mdns_names:
+            try:
+                import socket
+                ip = socket.gethostbyname(mdns_name)
+                logger.info(f"Trying mDNS name {mdns_name} -> {ip}")
+                if self._test_esp8266_connection(ip):
+                    self.ip_address = ip
+                    self.base_url = f"http://{ip}:{self.port}"
+                    logger.info(f"ESP8266 found via mDNS at {ip}")
+                    return True
+            except Exception as e:
+                logger.debug(f"mDNS lookup failed for {mdns_name}: {e}")
         
-        # Try common IP addresses
+        # Method 2: Try to get current network range from Raspberry Pi
+        try:
+            import subprocess
+            result = subprocess.run(['hostname', '-I'], capture_output=True, text=True, timeout=5)
+            if result.returncode == 0:
+                pi_ip = result.stdout.strip().split()[0]
+                if '.' in pi_ip:
+                    # Extract network base (e.g. 192.168.1. from 192.168.1.100)
+                    ip_parts = pi_ip.split('.')
+                    if len(ip_parts) >= 3:
+                        current_network = f"{ip_parts[0]}.{ip_parts[1]}.{ip_parts[2]}."
+                        logger.info(f"Detected Raspberry Pi network: {current_network}xxx")
+                        # Try current network range first
+                        if self._scan_network_range(current_network):
+                            return True
+        except Exception as e:
+            logger.debug(f"Failed to detect current network range: {e}")
+        
+        # Method 3: Common IP addresses for different network configurations
+        common_ips = [
+            "192.168.1.100", "192.168.1.101", "192.168.1.102", "192.168.1.150",
+            "192.168.0.100", "192.168.0.101", "192.168.0.102", "192.168.0.150", 
+            "192.168.4.1",   # ESP8266 AP mode default
+            "10.0.0.100", "10.0.0.101", "10.0.0.102",
+            "192.168.1.200", "192.168.1.201", "192.168.1.123"
+        ]
+        
+        logger.info(f"Testing {len(common_ips)} common IP addresses...")
         for ip in common_ips:
+            logger.debug(f"Testing {ip}...")
             if self._test_esp8266_connection(ip):
                 self.ip_address = ip
                 self.base_url = f"http://{ip}:{self.port}"
                 logger.info(f"ESP8266 found at {ip}")
                 return True
         
-        # Try scanning common subnet ranges
-        for base in ["192.168.1.", "192.168.0.", "10.0.0."]:
-            for i in range(100, 255):
-                ip = f"{base}{i}"
-                if self._test_esp8266_connection(ip):
-                    self.ip_address = ip
-                    self.base_url = f"http://{ip}:{self.port}"
-                    logger.info(f"ESP8266 found at {ip}")
-                    return True
+        # Method 4: Network range scanning
+        logger.info("Performing network range scan...")
+        common_ranges = ["192.168.1.", "192.168.0.", "10.0.0.", "192.168.10."]
+        for base in common_ranges:
+            if self._scan_network_range(base):
+                return True
         
         logger.warning("ESP8266 not found on network")
+        logger.info("ESP8266 troubleshooting tips:")
+        logger.info("  1. Make sure ESP8266 is powered and connected to WiFi")
+        logger.info("  2. Check ESP8266 serial output for IP address during boot")
+        logger.info("  3. Look for ESP8266 in your router's device list")
+        logger.info("  4. Try accessing: http://[ESP8266_IP] directly in a browser")
+        logger.info("  5. If you know the IP, set ESP8266_IP = \"x.x.x.x\" in main.py")
         return False
     
+    def _scan_network_range(self, base_ip: str, start: int = 100, end: int = 200) -> bool:
+        """Scan a range of IPs in a network"""
+        logger.info(f"Scanning {base_ip}{start}-{end}...")
+        import threading
+        import queue
+        
+        found_ip = None
+        result_queue = queue.Queue()
+        
+        def test_ip(ip):
+            if self._test_esp8266_connection(ip):
+                result_queue.put(ip)
+        
+        # Use threading for faster scanning
+        threads = []
+        for i in range(start, min(end + 1, 255)):
+            ip = f"{base_ip}{i}"
+            thread = threading.Thread(target=test_ip, args=(ip,))
+            threads.append(thread)
+            thread.start()
+            
+            # Limit concurrent threads
+            if len(threads) >= 20:
+                for t in threads:
+                    t.join(timeout=1)
+                threads = []
+        
+        # Wait for remaining threads
+        for thread in threads:
+            thread.join(timeout=1)
+        
+        # Check results
+        try:
+            found_ip = result_queue.get_nowait()
+            self.ip_address = found_ip
+            self.base_url = f"http://{found_ip}:{self.port}"
+            logger.info(f"ESP8266 found at {found_ip}")
+            return True
+        except queue.Empty:
+            return False
+    
     def _test_esp8266_connection(self, ip: str) -> bool:
-        """Test if ESP8266 is responding at given IP"""
+        """Test if ESP8266 is responding at given IP with comprehensive checks"""
         try:
             # Quick socket test first
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -82,15 +154,40 @@ class ESP8266Handler:
             if result != 0:
                 return False
             
-            # Test HTTP endpoint
-            response = requests.get(f"http://{ip}/api", timeout=2)
-            if response.status_code == 200:
-                data = response.json()
-                # Check if it looks like our sensor system
-                if 's1' in data or 'run' in data:
+            # Test multiple HTTP endpoints that might exist on ESP8266
+            test_endpoints = [
+                '/api',
+                '/',
+                '/status',
+                '/sensor',
+                '/data'
+            ]
+            
+            for endpoint in test_endpoints:
+                try:
+                    response = requests.get(f"http://{ip}{endpoint}", timeout=2)
+                    if response.status_code == 200:
+                        data = response.text
+                        # Check if it looks like our sensor system
+                        if 's1' in data or 's2' in data or 'run' in data or 'sensor' in data.lower() or 'flow' in data.lower():
+                            logger.debug(f"ESP8266 confirmed at {ip}{endpoint}")
+                            return True
+                except Exception as e:
+                    logger.debug(f"Failed to test {ip}{endpoint}: {e}")
+                    continue
+                    
+            # Even if endpoints don't match exactly, if we got HTTP responses, it might be our device
+            try:
+                response = requests.get(f"http://{ip}", timeout=2)
+                if response.status_code == 200 and len(response.text) > 10:
+                    logger.info(f"Found HTTP server at {ip}, assuming it's our ESP8266")
                     return True
+            except:
+                pass
+            
             return False
-        except:
+        except Exception as e:
+            logger.debug(f"Connection test failed for {ip}: {e}")
             return False
     
     def connect(self, ip_address: str) -> bool:
