@@ -69,6 +69,7 @@ class ESP8266Handler:
         
         # Method 3: Common IP addresses for different network configurations
         common_ips = [
+            "192.168.10.100", "192.168.10.101", "192.168.10.102", "192.168.10.150",
             "192.168.1.100", "192.168.1.101", "192.168.1.102", "192.168.1.150",
             "192.168.0.100", "192.168.0.101", "192.168.0.102", "192.168.0.150", 
             "192.168.4.1",   # ESP8266 AP mode default
@@ -87,7 +88,7 @@ class ESP8266Handler:
         
         # Method 4: Network range scanning
         logger.info("Performing network range scan...")
-        common_ranges = ["192.168.1.", "192.168.0.", "10.0.0.", "192.168.10."]
+        common_ranges = ["192.168.10.", "192.168.1.", "192.168.0.", "10.0.0."]
         for base in common_ranges:
             if self._scan_network_range(base):
                 return True

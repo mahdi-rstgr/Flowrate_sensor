@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -11,7 +11,7 @@
     <div class="container">
         <!-- Header -->
         <div class="header">
-            <h1>Flow Control System</h1>
+            <h1>🌊 Integrated Flow Control System</h1>
             <div class="system-status-bar">
                 <div class="status-item">
                     <span class="status-dot" id="arduinoStatus"></span>
@@ -29,10 +29,10 @@
 
         <!-- Tab Navigation -->
         <div class="tab-navigation">
-            <button class="tab-button active" data-tab="overview">Overview</button>
-            <button class="tab-button" data-tab="sensors">Flow Sensors</button>
-            <button class="tab-button" data-tab="pumps">Pump Control</button>
-            <button class="tab-button" data-tab="data">Data Management</button>
+            <button class="tab-button active" data-tab="overview">📊 Overview</button>
+            <button class="tab-button" data-tab="sensors">🔍 Flow Sensors</button>
+            <button class="tab-button" data-tab="pumps">⚡ Pump Control</button>
+            <button class="tab-button" data-tab="data">📁 Data Management</button>
         </div>
 
         <!-- Tab Content -->
@@ -42,7 +42,7 @@
                 <div class="overview-grid">
                     <!-- Sensor Overview -->
                     <div class="panel">
-                        <h2>Flow Sensors Status</h2>
+                        <h2>🔍 Flow Sensors Status</h2>
                         <div class="sensor-overview">
                             <div class="sensor-grid">
                                 <div class="sensor-card" data-sensor="1">
@@ -84,7 +84,7 @@
 
                     <!-- Pump Overview -->
                     <div class="panel">
-                        <h2>Pump Control Status</h2>
+                        <h2>⚡ Pump Control Status</h2>
                         <div class="pump-overview">
                             <div class="pump-grid">
                                 <div class="pump-card-mini" data-pump="1">
@@ -109,14 +109,14 @@
                                 </div>
                             </div>
                             <div class="emergency-section">
-                                <button class="btn btn-emergency" id="emergencyStop">EMERGENCY STOP</button>
+                                <button class="btn btn-emergency" id="emergencyStop">🚨 EMERGENCY STOP</button>
                             </div>
                         </div>
                     </div>
 
                     <!-- Real-time Chart -->
                     <div class="panel full-width">
-                        <h2>Real-time Flow Monitoring</h2>
+                        <h2>📈 Real-time Flow Monitoring</h2>
                         <div class="chart-container">
                             <canvas id="overviewChart"></canvas>
                         </div>
@@ -129,7 +129,7 @@
                 <div class="sensors-content">
                     <!-- Sensor Controls -->
                     <div class="panel">
-                        <h2>Flow Sensor Controls</h2>
+                        <h2>🔍 Flow Sensor Controls</h2>
                         <div class="sensor-controls-grid">
                             <div class="control-group">
                                 <label>Recording Control:</label>
@@ -140,50 +140,105 @@
                                 </div>
                                 <div id="recordingStatus2" class="status-text">Not Recording</div>
                             </div>
+                            <div class="control-group">
+                                <label>Sensor Enable/Disable:</label>
+                                <div class="sensor-toggles">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="sensor1Toggle" checked>
+                                        <span class="slider"></span>
+                                        Sensor 1
+                                    </label>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="sensor2Toggle" checked>
+                                        <span class="slider"></span>
+                                        Sensor 2
+                                    </label>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="sensor3Toggle" checked>
+                                        <span class="slider"></span>
+                                        Sensor 3
+                                    </label>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="sensor4Toggle" checked>
+                                        <span class="slider"></span>
+                                        Sensor 4
+                                    </label>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
                     <!-- Detailed Charts -->
                     <div class="panel">
-                        <h2>Flow Rate Charts</h2>
+                        <h2>📊 Flow Rate Charts</h2>
                         <div class="chart-container">
                             <canvas id="flowChart"></canvas>
                         </div>
                     </div>
                     <!-- Individual Sensor Charts -->
                     <div class="panel">
-                        <h2> Individual Sensor Flow Charts</h2>
+                        <h2>📈 Individual Sensor Flow Charts</h2>
                         <div class="individual-charts-grid">
                             <div class="individual-chart">
-                                <h3>Sensor 1</h3>
+                                <h3>Sensor 1 Flow Rate</h3>
                                 <div class="chart-container">
                                     <canvas id="sensor1Chart"></canvas>
                                 </div>
                             </div>
                             <div class="individual-chart">
-                                <h3>Sensor 2</h3>
+                                <h3>Sensor 2 Flow Rate</h3>
                                 <div class="chart-container">
                                     <canvas id="sensor2Chart"></canvas>
                                 </div>
                             </div>
                             <div class="individual-chart">
-                                <h3>Sensor 3</h3>
+                                <h3>Sensor 3 Flow Rate</h3>
                                 <div class="chart-container">
                                     <canvas id="sensor3Chart"></canvas>
                                 </div>
                             </div>
                             <div class="individual-chart">
-                                <h3>Sensor 4</h3>
+                                <h3>Sensor 4 Flow Rate</h3>
                                 <div class="chart-container">
                                     <canvas id="sensor4Chart"></canvas>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    
+                    <!-- Individual Sensor Charts -->
+                    <div class="panel">
+                        <h2>📈 Individual Sensor Flow Charts</h2>
+                        <div class="individual-charts-grid">
+                            <div class="individual-chart">
+                                <h3>Sensor 1 Flow Rate</h3>
+                                <div class="chart-container">
+                                    <canvas id="sensor1Chart"></canvas>
+                                </div>
+                            </div>
+                            <div class="individual-chart">
+                                <h3>Sensor 2 Flow Rate</h3>
+                                <div class="chart-container">
+                                    <canvas id="sensor2Chart"></canvas>
+                                </div>
+                            </div>
+                            <div class="individual-chart">
+                                <h3>Sensor 3 Flow Rate</h3>
+                                <div class="chart-container">
+                                    <canvas id="sensor3Chart"></canvas>
+                                </div>
+                            </div>
+                            <div class="individual-chart">
+                                <h3>Sensor 4 Flow Rate</h3>
+                                <div class="chart-container">
+                                    <canvas id="sensor4Chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Sensor Data Table -->
                     <div class="panel">
-                        <h2>Live Sensor Data</h2>
+                        <h2>📋 Live Sensor Data</h2>
                         <div class="table-container">
                             <table id="sensorDataTable">
                                 <thead>
@@ -213,27 +268,32 @@
                 <div class="pumps-content">
                     <!-- Multi-pump Controls -->
                     <div class="panel">
-                        <h2>Multi-Pump Control</h2>
+                        <h2>⚡ Multi-Pump Control</h2>
                         <div class="multi-pump-controls">
                             <div class="selection-controls">
                                 <label class="checkbox-container">
                                     <input type="checkbox" id="selectAllPumps">
+                                    <span class="checkmark"></span>
                                     Select All
                                 </label>
                                 <label class="checkbox-container">
                                     <input type="checkbox" id="selectPump1" class="pump-checkbox" data-pump="1">
+                                    <span class="checkmark"></span>
                                     Pump 1
                                 </label>
                                 <label class="checkbox-container">
                                     <input type="checkbox" id="selectPump2" class="pump-checkbox" data-pump="2">
+                                    <span class="checkmark"></span>
                                     Pump 2
                                 </label>
                                 <label class="checkbox-container">
                                     <input type="checkbox" id="selectPump3" class="pump-checkbox" data-pump="3">
+                                    <span class="checkmark"></span>
                                     Pump 3
                                 </label>
                                 <label class="checkbox-container">
                                     <input type="checkbox" id="selectPump4" class="pump-checkbox" data-pump="4">
+                                    <span class="checkmark"></span>
                                     Pump 4
                                 </label>
                             </div>
@@ -253,6 +313,7 @@
                                 <div class="input-group">
                                     <label class="checkbox-container">
                                         <input type="checkbox" id="batchContinuous">
+                                        <span class="checkmark"></span>
                                         Continuous
                                     </label>
                                 </div>
@@ -280,6 +341,7 @@
                                 <div class="input-group">
                                     <label class="checkbox-container">
                                         <input type="checkbox" class="continuous-checkbox" data-pump="1">
+                                        <span class="checkmark"></span>
                                         Continuous
                                     </label>
                                 </div>
@@ -308,6 +370,7 @@
                                 <div class="input-group">
                                     <label class="checkbox-container">
                                         <input type="checkbox" class="continuous-checkbox" data-pump="2">
+                                        <span class="checkmark"></span>
                                         Continuous
                                     </label>
                                 </div>
@@ -336,6 +399,7 @@
                                 <div class="input-group">
                                     <label class="checkbox-container">
                                         <input type="checkbox" class="continuous-checkbox" data-pump="3">
+                                        <span class="checkmark"></span>
                                         Continuous
                                     </label>
                                 </div>
@@ -364,6 +428,7 @@
                                 <div class="input-group">
                                     <label class="checkbox-container">
                                         <input type="checkbox" class="continuous-checkbox" data-pump="4">
+                                        <span class="checkmark"></span>
                                         Continuous
                                     </label>
                                 </div>
@@ -381,10 +446,10 @@
             <div id="data" class="tab-panel">
                 <div class="data-content">
                     <div class="panel">
-                        <h2> Data Management</h2>
+                        <h2>📁 Data Management</h2>
                         <div class="data-controls">
                             <div class="control-section">
-                                <h3>Data Export</h3>
+                                <h3>📊 Data Export</h3>
                                 <button class="btn btn-info" id="downloadCsv">Download Flow Data CSV</button>
                                 <button class="btn btn-info" id="exportSystemReport">Export System Report</button>
                                 <div class="data-info">
@@ -393,7 +458,7 @@
                             </div>
                             
                             <div class="control-section">
-                                <h3>Data Analysis</h3>
+                                <h3>📈 Data Analysis</h3>
                                 <div class="analysis-grid">
                                     <div class="stat-card">
                                         <h4>Total Samples</h4>
@@ -424,7 +489,7 @@
     
     <!-- Copyright -->
     <footer style="text-align: center; padding: 20px; margin-top: 40px; border-top: 1px solid #ddd; color: #666; font-size: 0.9em;">
-        <p>&copy; Acceleration Consortium - SDL5 - Mahdi Rastegar - 2026</p>
+        <p>&copy; 2026 Mahdi Rastegar</p>
     </footer>
 </body>
 </html>
