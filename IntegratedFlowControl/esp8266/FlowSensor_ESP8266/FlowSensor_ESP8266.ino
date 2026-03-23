@@ -23,14 +23,30 @@ static void wifi_connect() {
   }       
   Serial.println();
   Serial.printf("[wifi] Connected. IP: %s\n", WiFi.localIP().toString().c_str());
+  
+  // Print prominent IP address banner
+  Serial.println();
+  Serial.println("================================================");
+  Serial.println("          ESP8266 FLOW SENSOR READY");
+  Serial.println("================================================");
+  Serial.printf("     IP ADDRESS: %s\n", WiFi.localIP().toString().c_str());
+  Serial.printf("     WEB ACCESS: http://%s\n", WiFi.localIP().toString().c_str());
+  Serial.printf("     NETWORK: %s\n", WIFI_SSID);
+  Serial.println("================================================");
+  Serial.println();
+  
   if (MDNS.begin(MDNS_HOST)) {
-    Serial.printf("[mdns] http://%s.local\n", MDNS_HOST);
+    Serial.printf("[mdns] mDNS available at: http://%s.local\n", MDNS_HOST);
   }
 }
 
 // Fast sampling 20 Hz
 static const unsigned long SAMPLE_MS = 50;   // 20 Hz
 static unsigned long last_sample_ms = 0;
+
+// Periodic IP address reminder (every 60 seconds)
+static unsigned long last_ip_reminder_ms = 0;
+static const unsigned long IP_REMINDER_MS = 60000;  // 60 seconds
 
 // Data buffers for 4 sensors
 static const int N10 = 200; // 10 s @ 20 Hz
@@ -354,10 +370,30 @@ void setup() {
 
   Serial.println("[setup] Flow sensors ready");
   Serial.printf("[setup] Access web interface at: http://%s\n", WiFi.localIP().toString().c_str());
+  
+  // Additional prominent IP display for backend connection
+  Serial.println();
+  Serial.println("++++++++++++++++++++++++++++++++++++++++++++++++");
+  Serial.println("  COPY THIS IP ADDRESS FOR BACKEND CONFIG:");
+  Serial.printf("  >>> %s <<<\n", WiFi.localIP().toString().c_str());  
+  Serial.println("  Add this IP to esp8266_handler.py if needed");
+  Serial.println("++++++++++++++++++++++++++++++++++++++++++++++++");
+  Serial.println();
 }
 
 void loop() {
   sample_20hz();      // always sampling
   record_if_due();    // only when recording == true
   web_loop();
+  
+  // Periodic IP address reminder for easy backend configuration
+  unsigned long now = millis();
+  if (now - last_ip_reminder_ms > IP_REMINDER_MS) {
+    last_ip_reminder_ms = now;
+    Serial.println("--------------------------------------------");
+    Serial.printf("ESP8266 IP: %s | Status: %s\n", 
+                  WiFi.localIP().toString().c_str(),
+                  WiFi.isConnected() ? "Connected" : "Disconnected");
+    Serial.println("--------------------------------------------");
+  }
 }

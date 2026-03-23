@@ -42,12 +42,19 @@ esp8266_handler = ESP8266Handler()
 # ESP8266 communicates via WiFi/HTTP (connect to /dev/ttyUSB0 for programming only)
 # Arduino Uno communicates via serial on /dev/ttyACM0
 # Set ESP8266_IP to your ESP8266's IP address if auto-discovery fails
-ESP8266_IP = None  # Auto-discovery enabled - will scan network for ESP8266
+ESP8266_IP = "192.168.10.167"  # Your current ESP8266 IP
+
+# Automatic IP monitoring and recovery (when ESP8266_IP is set)
+# If connection fails, system will try to discover new IP automatically
+ESP8266_AUTO_RECOVERY = True    # Enable automatic IP discovery on connection failure
+ESP8266_MONITOR_INTERVAL = 30   # Check connection every 30 seconds
 
 # IMPORTANT: ESP8266 Setup Instructions
 # 1. Program ESP8266 via USB (/dev/ttyUSB0) with flow sensor firmware
 # 2. Configure ESP8266 WiFi to connect to same network as Raspberry Pi
 # 3. ESP8266 will get IP from router - check router admin or ESP8266 serial output
+# 4. For STATIC IP: Set USE_STATIC_IP = true in ESP8266 firmware (recommended)
+# 5. For DHCP: Enable auto-recovery in this file (ESP8266_AUTO_RECOVERY = True)
 # 4. This system will auto-discover ESP8266 IP if ESP8266_IP is None
 
 # General Configuration
@@ -77,6 +84,79 @@ def serve_static(filename):
 # =============================================================================
 # FLOW SENSOR ENDPOINTS (ESP8266 Integration)
 # =============================================================================
+
+@app.route('/api/esp8266/status', methods=['GET'])
+def get_esp8266_status():
+    """Get ESP8266 connection status and IP information"""
+    try:
+        if esp8266_handler.ip_address:
+            # Test connection
+            try:
+                sensor_data = esp8266_handler.get_sensor_data()
+                return jsonify({
+                    'connected': True,
+                    'ip_address': esp8266_handler.ip_address,
+                    'base_url': esp8266_handler.base_url,
+                    'mDNS': 'flowsensors.local',
+                    'last_test': datetime.now().isoformat(),
+                    'status': 'Connected and responsive'
+                })
+            except Exception as e:
+                return jsonify({
+                    'connected': False,
+                    'ip_address': esp8266_handler.ip_address,
+                    'base_url': esp8266_handler.base_url,
+                    'error': str(e),
+                    'last_test': datetime.now().isoformat(),
+                    'status': 'IP configured but not responding'
+                }), 500
+        else:
+            return jsonify({
+                'connected': False,
+                'ip_address': None,
+                'base_url': None,
+                'status': 'Not connected',
+                'message': 'ESP8266 not found. Check network connection and IP configuration.'
+            }), 500
+    except Exception as e:
+        return jsonify({
+            'connected': False,
+            'error': str(e),
+            'status': 'Connection check failed'
+        }), 500
+
+@app.route('/api/esp8266/rediscover', methods=['POST'])  
+def rediscover_esp8266():
+    """Force rediscovery of ESP8266"""
+    try:
+        logger.info("Manual ESP8266 rediscovery requested")
+        if esp8266_handler.discover_and_connect():
+            new_ip = esp8266_handler.get_ip_address()
+            logger.info(f"ESP8266 rediscovered at: {new_ip}")
+            
+            # Update global IP configuration
+            global ESP8266_IP
+            old_ip = ESP8266_IP
+            ESP8266_IP = new_ip
+            
+            return jsonify({
+                'success': True,
+                'ip_address': new_ip,
+                'old_ip': old_ip,
+                'message': f'ESP8266 rediscovered at {new_ip}' + 
+                          (f' (changed from {old_ip})' if old_ip != new_ip else '')
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'ESP8266 not found on network'
+            }), 404
+    except Exception as e:
+        logger.error(f"Error in manual ESP8266 rediscovery: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 @app.route('/api/flow-sensors', methods=['GET'])
 def get_flow_sensors():
@@ -565,6 +645,51 @@ def internal_error(error):
 # MAIN APPLICATION
 # =============================================================================
 
+# ============================================================================
+# ESP8266 IP MONITORING FUNCTIONALITY
+# ============================================================================
+
+def esp8266_ip_monitor():
+    """Monitor ESP8266 connection and automatically recover if IP changes"""
+    if not ESP8266_AUTO_RECOVERY:
+        return
+    
+    logger.info(f"Starting ESP8266 IP monitor (checking every {ESP8266_MONITOR_INTERVAL}s)")
+    
+    while True:
+        try:
+            time.sleep(ESP8266_MONITOR_INTERVAL)
+            
+            # Test current connection
+            if esp8266_handler.ip_address:
+                try:
+                    sensor_data = esp8266_handler.get_sensor_data()
+                    # Connection is working fine
+                    continue
+                except Exception as e:
+                    logger.warning(f"ESP8266 connection lost: {e}")
+                    logger.info("Attempting to rediscover ESP8266...")
+                    
+                    # Try to rediscover ESP8266
+                    if esp8266_handler.discover_and_connect():
+                        new_ip = esp8266_handler.get_ip_address()
+                        logger.info(f"ESP8266 rediscovered at new IP: {new_ip}")
+                        
+                        # Update the global IP configuration if it changed
+                        global ESP8266_IP
+                        if ESP8266_IP != new_ip:
+                            old_ip = ESP8266_IP
+                            ESP8266_IP = new_ip
+                            logger.info(f"IP address changed from {old_ip} to {new_ip}")
+                            print(f"\n*** ESP8266 IP CHANGED: {old_ip} → {new_ip} ***")
+                            print(f"*** System automatically reconnected! ***\n")
+                    else:
+                        logger.error("Failed to rediscover ESP8266")
+                        
+        except Exception as e:
+            logger.error(f"Error in ESP8266 IP monitor: {e}")
+            time.sleep(5)  # Short delay before retrying
+
 def main():
     """Main function to start the integrated flow control system"""
     print("=" * 70)
@@ -637,6 +762,15 @@ def main():
         print(f"  - IP Address: {esp8266_handler.get_ip_address()}")
         print(f"  - Base URL: {esp8266_handler.base_url}")
         print(f"  - Test URL: {esp8266_handler.base_url}/api")
+        
+        # Start IP monitoring thread if auto-recovery is enabled
+        if ESP8266_AUTO_RECOVERY:
+            print(f"  - IP Monitoring: ENABLED (check every {ESP8266_MONITOR_INTERVAL}s)")
+            monitor_thread = threading.Thread(target=esp8266_ip_monitor, daemon=True)
+            monitor_thread.start()
+            logger.info("ESP8266 IP monitoring thread started")
+        else:
+            print(f"  - IP Monitoring: DISABLED")
     
     # Check frontend files
     print("\n[3] Checking frontend files...")

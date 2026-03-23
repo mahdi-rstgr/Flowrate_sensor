@@ -28,12 +28,13 @@ class ESP8266Handler:
         """
         logger.info("Scanning for ESP8266 flow sensors...")
         
-        # Method 1: Try mDNS names first
+        # Method 1: Try mDNS names first (enhanced list)
         mdns_names = [
-            "flowsensors.local",
+            "flowsensors.local",   # Updated ESP8266 mDNS name (no double 's')
             "flowsensor.local", 
             "esp8266.local",
-            "arduino.local"
+            "arduino.local",
+            "flowssensors.local"   # Old mDNS name for backward compatibility
         ]
         
         for mdns_name in mdns_names:
@@ -41,7 +42,7 @@ class ESP8266Handler:
                 import socket
                 ip = socket.gethostbyname(mdns_name)
                 logger.info(f"Trying mDNS name {mdns_name} -> {ip}")
-                if self._test_esp8266_connection(ip):
+                if self._test_esp8266_connection(ip, retries=2):
                     self.ip_address = ip
                     self.base_url = f"http://{ip}:{self.port}"
                     logger.info(f"ESP8266 found via mDNS at {ip}")
@@ -69,24 +70,31 @@ class ESP8266Handler:
         
         # Method 3: Common IP addresses for different network configurations
         common_ips = [
+            # Current/recent IP addresses (try these first)
+            "192.168.10.167", "192.168.10.165", "192.168.10.166", "192.168.10.168",
+            
+            # Common 192.168.10.x network (your current network)
             "192.168.10.100", "192.168.10.101", "192.168.10.102", "192.168.10.150",
+            "192.168.10.200", "192.168.10.201", "192.168.10.123",
+            
+            # Other common network ranges
             "192.168.1.100", "192.168.1.101", "192.168.1.102", "192.168.1.150",
             "192.168.0.100", "192.168.0.101", "192.168.0.102", "192.168.0.150", 
             "192.168.4.1",   # ESP8266 AP mode default
             "10.0.0.100", "10.0.0.101", "10.0.0.102",
-            "192.168.1.200", "192.168.1.201", "192.168.1.123"
+            "192.168.1.200", "192.168.1.201"
         ]
         
         logger.info(f"Testing {len(common_ips)} common IP addresses...")
         for ip in common_ips:
             logger.debug(f"Testing {ip}...")
-            if self._test_esp8266_connection(ip):
+            if self._test_esp8266_connection(ip, retries=2):
                 self.ip_address = ip
                 self.base_url = f"http://{ip}:{self.port}"
                 logger.info(f"ESP8266 found at {ip}")
                 return True
         
-        # Method 4: Network range scanning
+        # Method 4: Network range scanning (prioritize your network)
         logger.info("Performing network range scan...")
         common_ranges = ["192.168.10.", "192.168.1.", "192.168.0.", "10.0.0."]
         for base in common_ranges:
@@ -112,7 +120,7 @@ class ESP8266Handler:
         result_queue = queue.Queue()
         
         def test_ip(ip):
-            if self._test_esp8266_connection(ip):
+            if self._test_esp8266_connection(ip, retries=1):  # Single retry for network scan
                 result_queue.put(ip)
         
         # Use threading for faster scanning
@@ -143,63 +151,77 @@ class ESP8266Handler:
         except queue.Empty:
             return False
     
-    def _test_esp8266_connection(self, ip: str) -> bool:
+    def _test_esp8266_connection(self, ip: str, retries: int = 2) -> bool:
         """Test if ESP8266 is responding at given IP with comprehensive checks"""
-        try:
-            # Quick socket test first
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(1)
-            result = sock.connect_ex((ip, self.port))
-            sock.close()
-            
-            if result != 0:
-                return False
-            
-            # Test multiple HTTP endpoints that might exist on ESP8266
-            test_endpoints = [
-                '/api',
-                '/',
-                '/status',
-                '/sensor',
-                '/data'
-            ]
-            
-            for endpoint in test_endpoints:
-                try:
-                    response = requests.get(f"http://{ip}{endpoint}", timeout=2)
-                    if response.status_code == 200:
-                        data = response.text
-                        # Check if it looks like our sensor system
-                        if 's1' in data or 's2' in data or 'run' in data or 'sensor' in data.lower() or 'flow' in data.lower():
-                            logger.debug(f"ESP8266 confirmed at {ip}{endpoint}")
-                            return True
-                except Exception as e:
-                    logger.debug(f"Failed to test {ip}{endpoint}: {e}")
-                    continue
-                    
-            # Even if endpoints don't match exactly, if we got HTTP responses, it might be our device
+        for attempt in range(retries):
             try:
-                response = requests.get(f"http://{ip}", timeout=2)
-                if response.status_code == 200 and len(response.text) > 10:
-                    logger.info(f"Found HTTP server at {ip}, assuming it's our ESP8266")
-                    return True
-            except:
-                pass
-            
-            return False
-        except Exception as e:
-            logger.debug(f"Connection test failed for {ip}: {e}")
-            return False
+                # Quick socket test first - increased timeout
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                sock.settimeout(3)  # Increased from 1s to 3s
+                result = sock.connect_ex((ip, self.port))
+                sock.close()
+                
+                if result != 0:
+                    if attempt < retries - 1:
+                        logger.debug(f"Socket connection failed for {ip}, retrying... ({attempt + 1}/{retries})")
+                        time.sleep(1)  # Brief delay before retry
+                        continue
+                    return False
+                
+                # Test multiple HTTP endpoints that might exist on ESP8266
+                test_endpoints = [
+                    '/api',
+                    '/',
+                    '/status',
+                    '/sensor',
+                    '/data'
+                ]
+                
+                for endpoint in test_endpoints:
+                    try:
+                        response = requests.get(f"http://{ip}{endpoint}", timeout=5)  # Increased from 2s to 5s
+                        if response.status_code == 200:
+                            data = response.text
+                            # Check if it looks like our sensor system
+                            if 's1' in data or 's2' in data or 'run' in data or 'sensor' in data.lower() or 'flow' in data.lower():
+                                logger.debug(f"ESP8266 confirmed at {ip}{endpoint}")
+                                return True
+                    except Exception as e:
+                        logger.debug(f"Failed to test {ip}{endpoint}: {e}")
+                        continue
+                        
+                # Even if endpoints don't match exactly, if we got HTTP responses, it might be our device
+                try:
+                    response = requests.get(f"http://{ip}", timeout=5)  # Increased from 2s to 5s
+                    if response.status_code == 200 and len(response.text) > 10:
+                        logger.info(f"Found HTTP server at {ip}, assuming it's our ESP8266")
+                        return True
+                except:
+                    pass
+                
+                if attempt < retries - 1:
+                    logger.debug(f"HTTP test failed for {ip}, retrying... ({attempt + 1}/{retries})")
+                    time.sleep(2)  # Longer delay for HTTP retry
+                    
+            except Exception as e:
+                logger.debug(f"Connection test failed for {ip} (attempt {attempt + 1}/{retries}): {e}")
+                if attempt < retries - 1:
+                    time.sleep(1)
+                    
+        return False
     
     def connect(self, ip_address: str) -> bool:
-        """Connect to ESP8266 at specific IP address"""
-        if self._test_esp8266_connection(ip_address):
+        """Connect to ESP8266 at specific IP address with retry logic"""
+        logger.info(f"Attempting to connect to ESP8266 at {ip_address}")
+        
+        # Use more retries for initial connection since ESP8266 might be starting up
+        if self._test_esp8266_connection(ip_address, retries=3):
             self.ip_address = ip_address
             self.base_url = f"http://{ip_address}:{self.port}"
             logger.info(f"Connected to ESP8266 at {ip_address}")
             return True
         else:
-            logger.error(f"Cannot connect to ESP8266 at {ip_address}")
+            logger.error(f"Cannot connect to ESP8266 at {ip_address} after multiple attempts")
             return False
     
     def is_connected(self) -> bool:
@@ -208,7 +230,7 @@ class ESP8266Handler:
             return False
         
         try:
-            response = requests.get(f"{self.base_url}/api", timeout=2)
+            response = requests.get(f"{self.base_url}/api", timeout=5)  # Increased timeout
             return response.status_code == 200
         except:
             return False
