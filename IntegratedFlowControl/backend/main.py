@@ -347,6 +347,13 @@ def start_pump():
                 'success': False,
                 'message': 'RPM must be between -2000 and 2000.'
             }), 400
+            
+        # Validate minimum RPM (absolute value must be at least 0.25)
+        if rpm != 0 and abs(rpm) < 0.25:
+            return jsonify({
+                'success': False,
+                'message': 'RPM must be 0 or have absolute value of at least 0.25.'
+            }), 400
         
         # Validate time for non-continuous operation
         if continuous == 0 and time_duration <= 0:

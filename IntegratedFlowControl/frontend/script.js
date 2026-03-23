@@ -838,7 +838,7 @@ class IntegratedFlowController {
             return;
         }
         
-        const batchRpm = parseInt(document.getElementById('batchRpm').value);
+        const batchRpm = parseFloat(document.getElementById('batchRpm').value);
         const batchTime = parseInt(document.getElementById('batchTime').value);
         const batchContinuous = document.getElementById('batchContinuous').checked;
         
@@ -911,7 +911,7 @@ class IntegratedFlowController {
         const continuousInput = document.querySelector(`input.continuous-checkbox[data-pump="${pumpId}"]`);
         
         return {
-            rpm: rpmInput ? parseInt(rpmInput.value) : 100,
+            rpm: rpmInput ? parseFloat(rpmInput.value) : 100,
             time: timeInput ? parseInt(timeInput.value) : 10,
             continuous: continuousInput ? continuousInput.checked : false
         };
