@@ -48,6 +48,10 @@ static unsigned long last_sample_ms = 0;
 static unsigned long last_ip_reminder_ms = 0;
 static const unsigned long IP_REMINDER_MS = 60000;  // 60 seconds
 
+// Periodic storage cleanup check (every 5 minutes)
+static unsigned long last_cleanup_check_ms = 0;
+static const unsigned long CLEANUP_CHECK_MS = 300000;  // 5 minutes
+
 // Data buffers for 4 sensors
 static const int N10 = 200; // 10 s @ 20 Hz
 static float s_flow_buf[NUM_SENSORS][N10] = {0};
@@ -208,6 +212,74 @@ static bool check_storage_available() {
     return false;
   }
   return true;
+}
+
+// Storage cleanup - remove old data files when storage gets full
+void cleanup_storage() {
+  Serial.println("[storage] Cleaning up storage...");
+  
+  FSInfo fs_info;
+  LittleFS.info(fs_info);
+  size_t used_before = fs_info.usedBytes;
+  size_t total = fs_info.totalBytes;
+  float percent_before = (float)used_before / total * 100.0;
+  
+  Serial.printf("[storage] Before cleanup: %.1f%% full (%.1fKB/%.1fKB)\n", 
+                percent_before, used_before/1024.0, total/1024.0);
+  
+  // Remove main data file
+  if (LittleFS.exists("/data.bin")) {
+    LittleFS.remove("/data.bin");
+    Serial.println("[storage] Removed /data.bin");
+  }
+  
+  // Remove any backup/temp files that might exist
+  if (LittleFS.exists("/data_backup.bin")) {
+    LittleFS.remove("/data_backup.bin");
+    Serial.println("[storage] Removed /data_backup.bin");
+  }
+  
+  if (LittleFS.exists("/log.csv")) {
+    LittleFS.remove("/log.csv");
+    Serial.println("[storage] Removed /log.csv");
+  }
+  
+  // Clear any other files in root directory (be careful to preserve system files)
+  Dir dir = LittleFS.openDir("/");
+  while (dir.next()) {
+    String filename = dir.fileName();
+    if (filename.startsWith("/data") || filename.startsWith("/log") || 
+        filename.endsWith(".csv") || filename.endsWith(".bin")) {
+      LittleFS.remove(filename);
+      Serial.printf("[storage] Removed %s\n", filename.c_str());
+    }
+  }
+  
+  // Check storage after cleanup
+  LittleFS.info(fs_info);
+  size_t used_after = fs_info.usedBytes;
+  float percent_after = (float)used_after / total * 100.0;
+  size_t freed = used_before - used_after;
+  
+  Serial.printf("[storage] After cleanup: %.1f%% full (%.1fKB/%.1fKB) - Freed %.1fKB\n", 
+                percent_after, used_after/1024.0, total/1024.0, freed/1024.0);
+                
+  data_ready = false;  // No data available after cleanup
+}
+
+// Check for storage cleanup needs - call this periodically
+void auto_cleanup_if_needed() {
+  FSInfo fs_info;
+  LittleFS.info(fs_info);
+  size_t used = fs_info.usedBytes;
+  size_t total = fs_info.totalBytes;
+  float percent_used = (float)used / total * 100.0;
+  
+  // Auto-cleanup when storage gets to 85% to prevent hitting 90% limit
+  if (percent_used > 85.0) {
+    Serial.printf("[storage] Auto-cleanup triggered at %.1f%% full\n", percent_used);
+    cleanup_storage();
+  }
 }
 
 // Recording 1.0 s to LittleFS (Binary Format)
@@ -386,8 +458,9 @@ void loop() {
   record_if_due();    // only when recording == true
   web_loop();
   
-  // Periodic IP address reminder for easy backend configuration
   unsigned long now = millis();
+  
+  // Periodic IP address reminder for easy backend configuration
   if (now - last_ip_reminder_ms > IP_REMINDER_MS) {
     last_ip_reminder_ms = now;
     Serial.println("--------------------------------------------");
@@ -395,5 +468,11 @@ void loop() {
                   WiFi.localIP().toString().c_str(),
                   WiFi.isConnected() ? "Connected" : "Disconnected");
     Serial.println("--------------------------------------------");
+  }
+  
+  // Periodic storage cleanup check to prevent storage from getting full
+  if (now - last_cleanup_check_ms > CLEANUP_CHECK_MS) {
+    last_cleanup_check_ms = now;
+    auto_cleanup_if_needed();
   }
 }

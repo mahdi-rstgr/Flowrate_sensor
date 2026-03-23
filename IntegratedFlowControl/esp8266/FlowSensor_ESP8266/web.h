@@ -1,6 +1,5 @@
 #pragma once
 #include <ESP8266WebServer.h>
-#include <uri/UriRegex.h>
 #include "sensors.h"   // bring in NUM_SENSORS + get/set_sensor_enabled + extern sensor_enabled[]
 
 #define POLL_INTERVAL_MS 1000
@@ -19,6 +18,9 @@ extern void get_ui_snapshot(
 extern void start_run();
 extern void stop_run();
 extern bool stream_csv_to_client(ESP8266WebServer& server);
+
+// Storage management functions
+extern void cleanup_storage();
 
 // Minimal HTML for ESP8266 integration (will be accessed via Python backend)
 static const char _PAGE_INDEX[] PROGMEM = R"HTML(<!DOCTYPE html>
@@ -60,6 +62,11 @@ static const char _PAGE_INDEX[] PROGMEM = R"HTML(<!DOCTYPE html>
             <button onclick="startRecording()" style="background: #4CAF50; color: white; padding: 10px; border: none; border-radius: 4px;">Start Recording</button>
             <button onclick="stopRecording()" style="background: #F44336; color: white; padding: 10px; border: none; border-radius: 4px; margin-left: 10px;">Stop Recording</button>
             <a href="/log.csv" style="background: #2196F3; color: white; padding: 10px; border: none; border-radius: 4px; text-decoration: none; margin-left: 10px;">Download CSV</a>
+            <button onclick="cleanupStorage()" style="background: #FF9800; color: white; padding: 10px; border: none; border-radius: 4px; margin-left: 10px;">🗑️ Clean Storage</button>
+        </div>
+        
+        <div style="margin-top: 15px; padding: 10px; background: #fff3cd; border-radius: 4px; border-left: 4px solid #ffc107;">
+            <small><strong> Storage Management:</strong> Storage automatically cleans when 85% full. Use "Clean Storage" button to manually clear old data files.</small>
         </div>
     </div>
 
@@ -88,6 +95,22 @@ static const char _PAGE_INDEX[] PROGMEM = R"HTML(<!DOCTYPE html>
                         `;
                     }
                 });
+                
+                // Add storage status
+                if (data.storage) {
+                    const storage = data.storage;
+                    const storageColor = storage.percent_used > 85 ? '#F44336' : 
+                                       storage.percent_used > 70 ? '#FF9800' : '#4CAF50';
+                    html += `
+                        <div style="margin-top: 15px; padding: 10px; background: #f9f9f9; border-radius: 4px;">
+                            <strong> Storage:</strong> 
+                            <span style="color: ${storageColor}; font-weight: bold;">${storage.percent_used}% used</span>
+                            (${storage.used_kb}KB / ${storage.total_kb}KB)
+                            ${storage.percent_used > 85 ? ' <span style="color: #F44336;">Almost Full!</span>' : ''}
+                        </div>
+                    `;
+                }
+                
                 document.getElementById('sensors').innerHTML = html;
             } catch (error) {
                 console.error('Error updating data:', error);
@@ -109,6 +132,20 @@ static const char _PAGE_INDEX[] PROGMEM = R"HTML(<!DOCTYPE html>
                 updateData();
             } catch (error) {
                 console.error('Error stopping recording:', error);
+            }
+        }
+
+        async function cleanupStorage() {
+            if (confirm('This will delete all recorded data files. Are you sure?')) {
+                try {
+                    const response = await fetch('/cleanup', { method: 'POST' });
+                    const result = await response.text();
+                    alert('Storage cleanup completed: ' + result);
+                    updateData();
+                } catch (error) {
+                    console.error('Error cleaning storage:', error);
+                    alert('Error cleaning storage: ' + error.message);
+                }
             }
         }
 
@@ -156,6 +193,18 @@ static void handle_api_data() {
   json += "\"csv_ready\":" + String(is_csv_ready ? "true" : "false");
   json += "}";
   
+  // Storage status
+  FSInfo fs_info;
+  LittleFS.info(fs_info);
+  float percent_used = (float)fs_info.usedBytes / fs_info.totalBytes * 100.0;
+  json += ",\"storage\":{";
+  json += "\"used_bytes\":" + String(fs_info.usedBytes) + ",";
+  json += "\"total_bytes\":" + String(fs_info.totalBytes) + ",";
+  json += "\"used_kb\":" + String(fs_info.usedBytes / 1024.0, 1) + ",";
+  json += "\"total_kb\":" + String(fs_info.totalBytes / 1024.0, 1) + ",";
+  json += "\"percent_used\":" + String(percent_used, 1);
+  json += "}";
+  
   json += "}";
   
   _server.send(200, "application/json", json);
@@ -177,31 +226,20 @@ static void handle_download_csv() {
   }
 }
 
-static void handle_toggle_sensor() {
-  String uri = _server.uri();
+static void handle_cleanup_storage() {
+  cleanup_storage();
   
-  // Parse URI: /sensor/{id}/{action}
-  int firstSlash = uri.indexOf('/', 1);
-  int secondSlash = uri.indexOf('/', firstSlash + 1);
+  // Get storage info after cleanup
+  FSInfo fs_info;
+  LittleFS.info(fs_info);
+  float percent_used = (float)fs_info.usedBytes / fs_info.totalBytes * 100.0;
   
-  if (firstSlash == -1 || secondSlash == -1) {
-    _server.send(400, "text/plain", "Invalid URL format");
-    return;
-  }
+  String response = "Storage cleaned successfully. ";
+  response += String(percent_used, 1) + "% used (";
+  response += String(fs_info.usedBytes / 1024.0, 1) + "KB / ";
+  response += String(fs_info.totalBytes / 1024.0, 1) + "KB)";
   
-  String sensorIdStr = uri.substring(firstSlash + 1, secondSlash);
-  String action = uri.substring(secondSlash + 1);
-  
-  uint8_t sensorId = sensorIdStr.toInt();
-  bool enable = (action == "on");
-  
-  if (sensorId >= 1 && sensorId <= NUM_SENSORS) {
-    set_sensor_enabled(sensorId, enable);
-    String response = "Sensor " + String(sensorId) + (enable ? " enabled" : " disabled");
-    _server.send(200, "text/plain", response);
-  } else {
-    _server.send(400, "text/plain", "Invalid sensor ID");
-  }
+  _server.send(200, "text/plain", response);
 }
 
 static void handle_not_found() {
@@ -216,10 +254,18 @@ inline void web_begin() {
   _server.on("/api", HTTP_GET, handle_api_data);
   _server.on("/start", HTTP_POST, handle_start_recording);
   _server.on("/stop", HTTP_POST, handle_stop_recording);
+  _server.on("/cleanup", HTTP_POST, handle_cleanup_storage);
   _server.on("/log.csv", HTTP_GET, handle_download_csv);
   
-  // Sensor toggle endpoint (regex pattern)
-  _server.on(UriRegex("/sensor/([1-4])/(on|off)"), HTTP_POST, handle_toggle_sensor);
+  // Individual sensor toggle endpoints (instead of regex for better compatibility)
+  _server.on("/sensor/1/on", HTTP_POST, []() { set_sensor_enabled(1, true); _server.send(200, "text/plain", "Sensor 1 enabled"); });
+  _server.on("/sensor/1/off", HTTP_POST, []() { set_sensor_enabled(1, false); _server.send(200, "text/plain", "Sensor 1 disabled"); });
+  _server.on("/sensor/2/on", HTTP_POST, []() { set_sensor_enabled(2, true); _server.send(200, "text/plain", "Sensor 2 enabled"); });
+  _server.on("/sensor/2/off", HTTP_POST, []() { set_sensor_enabled(2, false); _server.send(200, "text/plain", "Sensor 2 disabled"); });
+  _server.on("/sensor/3/on", HTTP_POST, []() { set_sensor_enabled(3, true); _server.send(200, "text/plain", "Sensor 3 enabled"); });
+  _server.on("/sensor/3/off", HTTP_POST, []() { set_sensor_enabled(3, false); _server.send(200, "text/plain", "Sensor 3 disabled"); });
+  _server.on("/sensor/4/on", HTTP_POST, []() { set_sensor_enabled(4, true); _server.send(200, "text/plain", "Sensor 4 enabled"); });
+  _server.on("/sensor/4/off", HTTP_POST, []() { set_sensor_enabled(4, false); _server.send(200, "text/plain", "Sensor 4 disabled"); });
   
   _server.onNotFound(handle_not_found);
   _server.begin();
