@@ -117,6 +117,10 @@ class IntegratedFlowController {
     setupDataEventListeners() {
         document.getElementById('downloadCsv')?.addEventListener('click', () => this.downloadSensorData());
         document.getElementById('exportSystemReport')?.addEventListener('click', () => this.exportSystemReport());
+        
+        // Storage management
+        document.getElementById('cleanStorage')?.addEventListener('click', () => this.cleanStorage());
+        document.getElementById('refreshStorage')?.addEventListener('click', () => this.refreshStorageStatus());
     }
     
     // =================================================================================
@@ -142,6 +146,13 @@ class IntegratedFlowController {
                 Object.values(this.charts).forEach(chart => {
                     if (chart) chart.resize();
                 });
+            }, 100);
+        }
+        
+        // Refresh storage status when switching to data management tab
+        if (tabName === 'data') {
+            setTimeout(() => {
+                this.refreshStorageStatus();
             }, 100);
         }
     }
@@ -371,11 +382,19 @@ class IntegratedFlowController {
     
     async updateAllData() {
         try {
-            await Promise.all([
+            const updates = [
                 this.updateSensorData(),
                 this.updatePumpData(),
                 this.updateSystemStatus()
-            ]);
+            ];
+            
+            // Update storage status if data management tab is active
+            const activeTab = document.querySelector('.tab-panel.active');
+            if (activeTab && activeTab.id === 'data') {
+                updates.push(this.refreshStorageStatus());
+            }
+            
+            await Promise.all(updates);
             this.updateLastUpdateTime();
         } catch (error) {
             console.error('Error updating data:', error);
@@ -969,6 +988,133 @@ class IntegratedFlowController {
         }, 4000);
         
         console.log(`[${type.toUpperCase()}] ${message}`);
+    }
+
+    // =================================================================================
+    // Storage Management
+    // =================================================================================
+    
+    async refreshStorageStatus() {
+        try {
+            console.log('Refreshing storage status...');
+            const response = await fetch('/api/esp8266/storage');
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            this.updateStorageDisplay(data);
+            this.showNotification('Storage status refreshed', 'success');
+            
+        } catch (error) {
+            console.error('Error getting storage status:', error);
+            this.showNotification('Failed to get storage status', 'error');
+            this.updateStorageDisplay(null);
+        }
+    }
+    
+    async cleanStorage() {
+        if (!confirm('⚠️ This will delete ALL recorded data files from ESP8266 storage.\\n\\nThis action cannot be undone. Continue?')) {
+            return;
+        }
+        
+        if (!confirm('🔔 FINAL CONFIRMATION: This will permanently delete all flow sensor data.\\n\\nHave you downloaded any data you want to keep?')) {
+            return;
+        }
+        
+        try {
+            console.log('Cleaning ESP8266 storage...');
+            
+            const button = document.getElementById('cleanStorage');
+            if (button) {
+                button.disabled = true;
+                button.textContent = '🗑️ Cleaning...';
+            }
+            
+            const response = await fetch('/api/esp8266/storage/clean', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            const result = await response.text();
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${result}`);
+            }
+            
+            this.showNotification('✅ ESP8266 storage cleaned successfully!', 'success');
+            
+            // Refresh storage status after cleanup
+            setTimeout(() => {
+                this.refreshStorageStatus();
+            }, 1000);
+            
+        } catch (error) {
+            console.error('Error cleaning storage:', error);
+            this.showNotification(`Failed to clean storage: ${error.message}`, 'error');
+        } finally {
+            const button = document.getElementById('cleanStorage');
+            if (button) {
+                button.disabled = false;
+                button.textContent = '🗑️ Clean ESP8266 Storage';
+            }
+        }
+    }
+    
+    updateStorageDisplay(storageData) {
+        if (!storageData) {
+            // Update with error state
+            document.getElementById('storageUsed').textContent = '--';
+            document.getElementById('storageAvailable').textContent = '--';
+            document.getElementById('storageTotal').textContent = '--';
+            document.getElementById('storageStatus').textContent = 'Unavailable';
+            document.getElementById('storageProgressFill').style.width = '0%';
+            return;
+        }
+        
+        const { used_kb, total_kb, percent_used } = storageData;
+        const available_kb = total_kb - used_kb;
+        
+        // Update storage info
+        document.getElementById('storageUsed').textContent = `${percent_used}%`;
+        document.getElementById('storageAvailable').textContent = `${available_kb.toFixed(1)} KB`;
+        document.getElementById('storageTotal').textContent = `${total_kb.toFixed(1)} KB`;
+        
+        // Update status based on usage
+        let status = 'Good';
+        let statusColor = '#28a745';
+        
+        if (percent_used > 85) {
+            status = '⚠️ Almost Full';
+            statusColor = '#dc3545';
+        } else if (percent_used > 70) {
+            status = '⚠️ High';
+            statusColor = '#ffc107';
+        }
+        
+        const statusElement = document.getElementById('storageStatus');
+        statusElement.textContent = status;
+        statusElement.style.color = statusColor;
+        
+        // Update progress bar
+        const progressFill = document.getElementById('storageProgressFill');
+        progressFill.style.width = `${percent_used}%`;
+        
+        // Change progress bar color based on usage
+        let progressColor = '#28a745';
+        if (percent_used > 85) {
+            progressColor = '#dc3545';
+        } else if (percent_used > 70) {
+            progressColor = '#ffc107';
+        } else if (percent_used > 50) {
+            progressColor = '#17a2b8';
+        }
+        progressFill.style.background = progressColor;
+        
+        console.log(`Storage status updated: ${percent_used}% used (${used_kb.toFixed(1)}KB / ${total_kb.toFixed(1)}KB)`);
     }
 }
 

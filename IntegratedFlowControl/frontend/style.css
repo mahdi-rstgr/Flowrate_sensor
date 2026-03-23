@@ -652,6 +652,112 @@ tbody tr:hover {
     margin-top: 20px;
 }
 
+/* Storage Management Styles */
+.storage-section {
+    margin-top: 15px;
+}
+
+.storage-status h4 {
+    margin-bottom: 15px;
+    color: #495057;
+}
+
+.storage-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.storage-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 10px;
+    background: white;
+    border-radius: 6px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.storage-label {
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin-bottom: 5px;
+}
+
+.storage-value {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+}
+
+.storage-progress {
+    margin-bottom: 20px;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 12px;
+    background-color: #e9ecef;
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #28a745 0%, #ffc107 70%, #dc3545 100%);
+    transition: width 0.3s ease;
+    position: relative;
+}
+
+.progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.2) 50%, transparent 100%);
+    animation: shimmer 2s linear infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.storage-controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.storage-info {
+    background: #fff3cd;
+    border-left: 4px solid #ffc107;
+    padding: 15px;
+    border-radius: 4px;
+}
+
+.storage-info p {
+    margin-bottom: 10px;
+    color: #856404;
+    font-weight: 600;
+}
+
+.storage-info ul {
+    margin-left: 20px;
+    color: #856404;
+}
+
+.storage-info ul li {
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+}
+
 /* Emergency Section */
 .emergency-section {
     text-align: center;

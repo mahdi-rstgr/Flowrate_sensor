@@ -158,6 +158,69 @@ def rediscover_esp8266():
             'error': str(e)
         }), 500
 
+@app.route('/api/esp8266/storage', methods=['GET'])
+def get_esp8266_storage_status():
+    """Get ESP8266 storage status information"""
+    try:
+        if not esp8266_handler.ip_address:
+            return jsonify({
+                'error': 'ESP8266 not connected'
+            }), 503
+        
+        # Get sensor data which includes storage info
+        sensor_data = esp8266_handler.get_sensor_data()
+        
+        if 'storage' in sensor_data:
+            storage_info = sensor_data['storage']
+            return jsonify({
+                'used_bytes': storage_info.get('used_bytes', 0),
+                'total_bytes': storage_info.get('total_bytes', 1),
+                'used_kb': storage_info.get('used_kb', 0),
+                'total_kb': storage_info.get('total_kb', 0),
+                'percent_used': storage_info.get('percent_used', 0)
+            })
+        else:
+            return jsonify({
+                'error': 'Storage information not available from ESP8266'
+            }), 404
+            
+    except Exception as e:
+        logger.error(f"Error getting ESP8266 storage status: {e}")
+        return jsonify({
+            'error': str(e)
+        }), 500
+
+@app.route('/api/esp8266/storage/clean', methods=['POST'])
+def clean_esp8266_storage():
+    """Clean ESP8266 storage by removing all data files"""
+    try:
+        if not esp8266_handler.ip_address:
+            return jsonify({
+                'error': 'ESP8266 not connected'
+            }), 503
+        
+        # Call ESP8266 cleanup endpoint
+        cleanup_url = f"http://{esp8266_handler.ip_address}/cleanup"
+        response = requests.post(cleanup_url, timeout=10)
+        
+        if response.status_code == 200:
+            cleanup_result = response.text
+            logger.info(f"ESP8266 storage cleaned successfully: {cleanup_result}")
+            return cleanup_result
+        else:
+            error_msg = f"ESP8266 cleanup failed: HTTP {response.status_code}"
+            logger.error(error_msg)
+            return error_msg, response.status_code
+            
+    except requests.RequestException as e:
+        error_msg = f"Failed to communicate with ESP8266: {str(e)}"
+        logger.error(error_msg)
+        return error_msg, 500
+    except Exception as e:
+        error_msg = f"Error cleaning ESP8266 storage: {str(e)}"
+        logger.error(error_msg)
+        return error_msg, 500
+
 @app.route('/api/flow-sensors', methods=['GET'])
 def get_flow_sensors():
     """Get real-time flow sensor data from ESP8266"""

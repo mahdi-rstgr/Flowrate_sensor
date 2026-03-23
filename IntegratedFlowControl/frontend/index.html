@@ -413,6 +413,57 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <div class="control-section">
+                                <h3>🗑️ Storage Management</h3>
+                                <div class="storage-section">
+                                    <div class="storage-status">
+                                        <h4>ESP8266 Storage Status</h4>
+                                        <div class="storage-info-grid">
+                                            <div class="storage-stat">
+                                                <span class="storage-label">Used:</span>
+                                                <span class="storage-value" id="storageUsed">-- %</span>
+                                            </div>
+                                            <div class="storage-stat">
+                                                <span class="storage-label">Available:</span>
+                                                <span class="storage-value" id="storageAvailable">-- KB</span>
+                                            </div>
+                                            <div class="storage-stat">
+                                                <span class="storage-label">Total:</span>
+                                                <span class="storage-value" id="storageTotal">-- KB</span>
+                                            </div>
+                                            <div class="storage-stat">
+                                                <span class="storage-label">Status:</span>
+                                                <span class="storage-value" id="storageStatus">--</span>
+                                            </div>
+                                        </div>
+                                        <div class="storage-progress">
+                                            <div class="progress-bar">
+                                                <div class="progress-fill" id="storageProgressFill" style="width: 0%;"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="storage-controls">
+                                        <button class="btn btn-warning" id="cleanStorage" title="Clean all recorded data files from ESP8266">
+                                            🗑️ Clean ESP8266 Storage
+                                        </button>
+                                        <button class="btn btn-info" id="refreshStorage" title="Refresh storage status">
+                                            🔄 Refresh Storage Info
+                                        </button>
+                                    </div>
+                                    
+                                    <div class="storage-info">
+                                        <p><strong>💡 Storage Management:</strong></p>
+                                        <ul>
+                                            <li>ESP8266 automatically cleans storage when it reaches 85% full</li>
+                                            <li>Use "Clean Storage" to manually clear all recorded data files</li>
+                                            <li>Storage cleanup removes all data files but preserves system configuration</li>
+                                            <li>Download your data before cleaning if you want to keep it</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
