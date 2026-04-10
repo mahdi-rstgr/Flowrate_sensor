@@ -28,8 +28,9 @@ class ESP8266Handler:
         """
         logger.info("Scanning for ESP8266 flow sensors...")
         
-        # Method 1: Try mDNS names first (enhanced list)
+        # Method 1: Try mDNS names first (viscometry system priority)
         mdns_names = [
+            "viscometry.local",    # Primary hostname for In-line Viscometry system
             "flowsensors.local",   # Updated ESP8266 mDNS name (no double 's')
             "flowsensor.local", 
             "esp8266.local",
@@ -70,12 +71,15 @@ class ESP8266Handler:
         
         # Method 3: Common IP addresses for different network configurations
         common_ips = [
-            # Current/recent IP addresses (try these first)
+            # In-line Viscometry System - Static IP (try first)
+            "192.168.10.200",
+            
+            # Previous working IP addresses
             "192.168.10.167", "192.168.10.165", "192.168.10.164", "192.168.10.168",
             
-            # Common 192.168.10.x network (your current network)
+            # Common 192.168.10.x network 
             "192.168.10.100", "192.168.10.101", "192.168.10.102", "192.168.10.150",
-            "192.168.10.200", "192.168.10.201", "192.168.10.123",
+            "192.168.10.201", "192.168.10.123",
             
             # Other common network ranges
             "192.168.1.100", "192.168.1.101", "192.168.1.102", "192.168.1.150",

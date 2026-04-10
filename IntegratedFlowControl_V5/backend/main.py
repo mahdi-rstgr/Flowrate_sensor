@@ -38,24 +38,23 @@ esp8266_handler = ESP8266Handler()
 # CONFIGURATION - Modify these settings as needed
 # ============================================================================
 
-# ESP8266 Configuration for Raspberry Pi 5.0
+# ESP8266 Configuration for In-line Viscometry System (Raspberry Pi 5.0)
 # ESP8266 communicates via WiFi/HTTP (connect to /dev/ttyUSB0 for programming only)
 # Arduino Uno communicates via serial on /dev/ttyACM0
-# Set ESP8266_IP to your ESP8266's IP address if auto-discovery fails
-ESP8266_IP = "192.168.10.164"  # Your current ESP8266 IP
+# Static IP configuration prevents conflicts with other ESP8266 flow sensor systems
+ESP8266_IP = "192.168.10.200"  # Static IP for viscometry system
 
-# Automatic IP monitoring and recovery (when ESP8266_IP is set)
-# If connection fails, system will try to discover new IP automatically
-ESP8266_AUTO_RECOVERY = False    # Enable automatic IP discovery on connection failure
+# Network Configuration
+# Auto-recovery disabled - using dedicated static IP to prevent conflicts
+ESP8266_AUTO_RECOVERY = False    # Disabled: using static IP configuration
 ESP8266_MONITOR_INTERVAL = 30   # Check connection every 30 seconds
 
-# IMPORTANT: ESP8266 Setup Instructions
+# IMPORTANT: In-line Viscometry ESP8266 Setup Instructions
 # 1. Program ESP8266 via USB (/dev/ttyUSB0) with flow sensor firmware
-# 2. Configure ESP8266 WiFi to connect to same network as Raspberry Pi
-# 3. ESP8266 will get IP from router - check router admin or ESP8266 serial output
-# 4. For STATIC IP: Set USE_STATIC_IP = true in ESP8266 firmware (recommended)
-# 5. For DHCP: Enable auto-recovery in this file (ESP8266_AUTO_RECOVERY = True)
-# 4. This system will auto-discover ESP8266 IP if ESP8266_IP is None
+# 2. ESP8266 firmware configured with STATIC IP: 192.168.10.200
+# 3. ESP8266 hostname: viscometry.local (prevents conflicts with other systems)
+# 4. Network conflicts resolved - safe to run alongside other flow sensor systems
+# 5. Backend connects directly to static IP (no auto-discovery needed)
 
 # General Configuration
 FRONTEND_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'frontend')

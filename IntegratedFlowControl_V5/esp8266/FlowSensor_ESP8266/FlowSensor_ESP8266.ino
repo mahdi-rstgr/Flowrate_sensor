@@ -8,13 +8,27 @@
 // UPDATE THESE WITH YOUR WIFI CREDENTIALS
 const char* WIFI_SSID = "AC-IoT-Cudy-18DC";
 const char* WIFI_PASS = "31185981";
-const char* MDNS_HOST = "flowssensors";
+const char* MDNS_HOST = "viscometry";
+
+// Static IP Configuration for In-line Viscometry System
+// Prevents network conflicts with other ESP8266 flow sensor systems
+const bool USE_STATIC_IP = true;
+const IPAddress STATIC_IP(192, 168, 10, 200);     // Dedicated IP for viscometry
+const IPAddress GATEWAY(192, 168, 10, 1);         // Router gateway
+const IPAddress SUBNET(255, 255, 255, 0);         // Subnet mask
 
 // Global sensor enabled state (referenced by sensors.h and web.h)
 bool sensor_enabled[NUM_SENSORS] = { true, true, true, true };
 
 static void wifi_connect() {
   WiFi.mode(WIFI_STA);
+  
+  // Configure static IP if enabled
+  if (USE_STATIC_IP) {
+    Serial.printf("[wifi] Configuring static IP: %s\n", STATIC_IP.toString().c_str());
+    WiFi.config(STATIC_IP, GATEWAY, SUBNET);
+  }
+  
   WiFi.begin(WIFI_SSID, WIFI_PASS);
   Serial.printf("[wifi] Connecting to %s", WIFI_SSID);
   while (WiFi.status() != WL_CONNECTED) {
@@ -27,10 +41,12 @@ static void wifi_connect() {
   // Print prominent IP address banner
   Serial.println();
   Serial.println("================================================");
-  Serial.println("          ESP8266 FLOW SENSOR READY");
+  Serial.println("      IN-LINE VISCOMETRY FLOW SENSORS");
   Serial.println("================================================");
-  Serial.printf("     IP ADDRESS: %s\n", WiFi.localIP().toString().c_str());
+  Serial.printf("     IP ADDRESS: %s%s\n", WiFi.localIP().toString().c_str(), 
+                USE_STATIC_IP ? " (STATIC)" : " (DHCP)");
   Serial.printf("     WEB ACCESS: http://%s\n", WiFi.localIP().toString().c_str());
+  Serial.printf("     HOSTNAME: %s.local\n", MDNS_HOST);
   Serial.printf("     NETWORK: %s\n", WIFI_SSID);
   Serial.println("================================================");
   Serial.println();
