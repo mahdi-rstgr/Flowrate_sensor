@@ -151,9 +151,15 @@ def main():
     
     print(f"\n🌐 Web Interface Will Be Available At:")
     print(f"   http://localhost:5000")
+    print(f"   http://192.168.10.200 (ESP8266 direct)")
     print(f"   Press Ctrl+C to stop the system")
     
-    input("\nPress Enter to start the system...")
+    print(f"\n🔧 Troubleshooting:")
+    print(f"   ESP8266 connection issues: python debug_esp8266.py")
+    print(f"   USB device aliases setup: sudo bash setup_usb_aliases.sh")
+    print(f"   Arduino: /dev/arduino_pump | ESP8266: /dev/esp8266_sensors")
+    
+    input("\nPress Enter to start the In-line Viscometry system...")
     
     start_system()
 
