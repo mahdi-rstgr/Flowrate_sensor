@@ -50,11 +50,20 @@ ESP8266_AUTO_RECOVERY = False    # Disabled: using static IP configuration
 ESP8266_MONITOR_INTERVAL = 30   # Check connection every 30 seconds
 
 # IMPORTANT: In-line Viscometry ESP8266 Setup Instructions
-# 1. Program ESP8266 via USB (/dev/ttyUSB0) with flow sensor firmware
+# 1. Program ESP8266 via USB (/dev/ttyUSB0 or /dev/esp8266_sensors) with flow sensor firmware
 # 2. ESP8266 firmware configured with STATIC IP: 192.168.10.200
 # 3. ESP8266 hostname: viscometry.local (prevents conflicts with other systems)
 # 4. Network conflicts resolved - safe to run alongside other flow sensor systems
 # 5. Backend connects directly to static IP (no auto-discovery needed)
+# 
+# USB ALIAS SETUP (Recommended for production):
+# Create persistent device names to avoid port changes:
+# sudo nano /etc/udev/rules.d/99-viscometry.rules
+# Add these rules:
+# SUBSYSTEM==\"tty\", ATTRS{idVendor}==\"2341\", ATTRS{idProduct}==\"0043\", SYMLINK+=\"arduino_pump\"
+# SUBSYSTEM==\"tty\", ATTRS{idVendor}==\"1a86\", ATTRS{idProduct}==\"7523\", SYMLINK+=\"esp8266_sensors\"
+# Then: sudo udevadm control --reload-rules && sudo udevadm trigger
+# Result: /dev/arduino_pump and /dev/esp8266_sensors always available
 
 # General Configuration
 FRONTEND_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'frontend')
@@ -789,27 +798,52 @@ def main():
     
     # Initialize ESP8266 connection
     print("\n[2] Connecting to ESP8266 (Flow Sensors via WiFi)...")
+    print(f"    Target: In-line Viscometry System at {ESP8266_IP}")
     
     connection_success = False
     
     if ESP8266_IP:
-        # Use manual IP address
-        print(f"    Using configured IP address: {ESP8266_IP}")
+        # Use static IP address (no auto-discovery for viscometry system)
+        print(f"    Using STATIC IP configuration: {ESP8266_IP}")
+        print("    Testing connection (this may take 10-15 seconds)...")
+        
+        # Enhanced connection test with detailed feedback
         if esp8266_handler.connect(ESP8266_IP):
-            print(f"OK: ESP8266 connected at {esp8266_handler.get_ip_address()}")
-            logger.info(f"ESP8266 connected via manual IP: {ESP8266_IP}")
+            print(f"✅ ESP8266 connected successfully at {esp8266_handler.get_ip_address()}")
+            print(f"    Web interface: http://{ESP8266_IP}")
+            print(f"    Hostname: viscometry.local")
+            logger.info(f"ESP8266 connected via static IP: {ESP8266_IP}")
             connection_success = True
         else:
-            print(f"ERROR: Failed to connect to ESP8266 at {ESP8266_IP}")
-            print("  Troubleshooting:")
-            print("    - Verify ESP8266 is powered and connected to WiFi")
-            print("    - Check IP address is correct")
-            print("    - Try: ping {ESP8266_IP}")
-            print("    - Check ESP8266 web interface: http://{ESP8266_IP}")
-            logger.error(f"Failed to connect to ESP8266 at configured IP {ESP8266_IP}")
+            print(f"❌ FAILED: ESP8266 not responding at {ESP8266_IP}")
+            print("\n🔍 TROUBLESHOOTING STEPS:")
+            print("   1. Check ESP8266 is powered on and blue LED is solid")
+            print("   2. Verify ESP8266 firmware uploaded with static IP configuration")
+            print(f"   3. Test network: ping {ESP8266_IP}")
+            print(f"   4. Check web interface: http://{ESP8266_IP}")
+            print("   5. Check ESP8266 serial output for WiFi connection errors")
+            print("   6. Verify router allows IP 192.168.10.200 (not reserved/blocked)")
+            print("\n📱 Serial Monitor Output Should Show:")
+            print("   - 'Configuring static IP: 192.168.10.200'")
+            print("   - 'Connected. IP: 192.168.10.200'")
+            print("   - 'IN-LINE VISCOMETRY FLOW SENSORS'")
+            print("\n⚠️  AUTO-DISCOVERY DISABLED for viscometry system")
+            print("   This prevents conflicts with other ESP8266 systems")
+            logger.error(f"ESP8266 static IP connection failed: {ESP8266_IP}")
     
-    if not connection_success:
-        # Use automatic discovery
+    # For viscometry system: DO NOT use auto-discovery to prevent conflicts
+    if not connection_success and ESP8266_IP == "192.168.10.200":
+        print("\n🚫 VISCOMETRY SYSTEM: Auto-discovery disabled")
+        print("   This prevents conflicts with other ESP8266 flow sensor systems")
+        print("   Please fix the static IP connection issue above")
+        print("\n💡 QUICK FIXES TO TRY:")
+        print("   1. Re-upload ESP8266 firmware with static IP configuration")
+        print("   2. Check if another device is using 192.168.10.200")
+        print("   3. Verify WiFi credentials in ESP8266 firmware")
+        print("   4. Check router DHCP settings and IP range")
+        logger.warning("Viscometry system auto-discovery disabled to prevent conflicts")
+    elif not connection_success:
+        # Use automatic discovery for other systems only
         print("    Auto-discovering ESP8266 on network...")
         print("    This may take 30-60 seconds...")
         if esp8266_handler.discover_and_connect():

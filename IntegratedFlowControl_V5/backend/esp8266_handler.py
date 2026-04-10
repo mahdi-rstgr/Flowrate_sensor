@@ -215,16 +215,41 @@ class ESP8266Handler:
         return False
     
     def connect(self, ip_address: str) -> bool:
-        """Connect to ESP8266 at specific IP address with retry logic"""
+        """Connect to ESP8266 at specific IP address with enhanced diagnostics"""
         logger.info(f"Attempting to connect to ESP8266 at {ip_address}")
+        
+        # Enhanced connection test with detailed logging
+        print(f"    Step 1: Testing network connectivity to {ip_address}...")
+        
+        # Test basic network connectivity first
+        import socket
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(5)
+        try:
+            result = sock.connect_ex((ip_address, self.port))
+            sock.close()
+            if result == 0:
+                print("    ✅ Network connection successful")
+            else:
+                print(f"    ❌ Network connection failed (error {result})")
+                print(f"    💡 Try: ping {ip_address}")
+                return False
+        except Exception as e:
+            print(f"    ❌ Network error: {e}")
+            return False
+        
+        print("    Step 2: Testing HTTP endpoints...")
         
         # Use more retries for initial connection since ESP8266 might be starting up
         if self._test_esp8266_connection(ip_address, retries=3):
             self.ip_address = ip_address
             self.base_url = f"http://{ip_address}:{self.port}"
+            print("    ✅ ESP8266 HTTP endpoints responding")
             logger.info(f"Connected to ESP8266 at {ip_address}")
             return True
         else:
+            print("    ❌ ESP8266 device not responding to HTTP requests")
+            print(f"    💡 Try: curl http://{ip_address} or open in browser")
             logger.error(f"Cannot connect to ESP8266 at {ip_address} after multiple attempts")
             return False
     

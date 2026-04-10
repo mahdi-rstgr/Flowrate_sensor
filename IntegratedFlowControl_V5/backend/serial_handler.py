@@ -22,8 +22,27 @@ class SerialHandler:
         self.lock = threading.Lock()  
         
     def find_arduino_port(self):
-        """Find Arduino port automatically with specific USB device ID support for Raspberry Pi"""
+        """Find Arduino port automatically with USB alias and hardware ID support for Raspberry Pi"""
         logger.info("Scanning for Arduino on Raspberry Pi...")
+        
+        # PRIORITY 1: Check for USB aliases first (most reliable)
+        usb_aliases = [
+            '/dev/arduino_pump',      # Recommended alias for Arduino pump controller
+            '/dev/pump_controller',   # Alternative alias name
+            '/dev/arduino_uno',       # Generic Arduino alias
+        ]
+        
+        logger.info("Checking for USB aliases...")
+        for alias in usb_aliases:
+            if os.path.exists(alias):
+                logger.info(f"Found USB alias: {alias}")
+                if self._test_arduino_connection(alias):
+                    logger.info(f"Arduino confirmed via USB alias: {alias}")
+                    return alias
+                else:
+                    logger.warning(f"USB alias {alias} exists but device doesn't respond like Arduino")
+        
+        # PRIORITY 2: Hardware ID detection
         ports = serial.tools.list_ports.comports()
         
         # Prioritize Arduino Uno over CH340 with connection verification
@@ -113,12 +132,15 @@ class SerialHandler:
             logger.info(f"  {port.device} - {port.description}{vid_pid}")
         
         logger.info("\nTroubleshooting tips:")
-        logger.info("  1. Make sure Arduino is connected via USB")
-        logger.info("  2. Check if Arduino is running the correct pump control firmware")
-        logger.info("  3. Try manually: sudo python3 -c 'import serial; s=serial.Serial(\"/dev/ttyACM0\", 9600, timeout=2); import time; time.sleep(2); s.write(b\"STATUS\\n\"); print(s.readline())'")
-        logger.info("  4. For Arduino Uno: usually /dev/ttyACM0")
-        logger.info("  5. For CH340 devices: usually /dev/ttyUSB0")
-        logger.info("  6. Run 'python3 raspberry_pi_config.py' for device detection")
+        logger.info("  1. Set up USB alias for reliable device naming:")
+        logger.info("     sudo nano /etc/udev/rules.d/99-arduino.rules")
+        logger.info("     Add: SUBSYSTEM==\"tty\", ATTRS{idVendor}==\"2341\", ATTRS{idProduct}==\"0043\", SYMLINK+=\"arduino_pump\"")
+        logger.info("     Then: sudo udevadm control --reload-rules && sudo udevadm trigger")
+        logger.info("  2. Check if Arduino is connected via USB")
+        logger.info("  3. Verify Arduino is running the correct pump control firmware")
+        logger.info("  4. Test manually: python3 raspberry_pi_config.py")
+        logger.info("  5. For Arduino Uno: usually /dev/ttyACM0")
+        logger.info("  6. For CH340 devices: usually /dev/ttyUSB0")
         
         return None
     
