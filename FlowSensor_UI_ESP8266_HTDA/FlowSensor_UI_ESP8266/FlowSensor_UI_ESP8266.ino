@@ -8,9 +8,9 @@
 bool sensor_enabled[NUM_SENSORS] = { true, true, true, true };
 
 // Wi-Fi 
-const char* WIFI_SSID = "NAME_OF_WIFI";
-const char* WIFI_PASS = "YOUR_PASSWORD";
-const char* MDNS_HOST = "xyz";
+const char* WIFI_SSID = "AC-IoT-Cudy-18DC";
+const char* WIFI_PASS = "31185981";
+const char* MDNS_HOST = "HTDA-Flow";
 
 static void wifi_connect() {
   WiFi.mode(WIFI_STA);
@@ -205,7 +205,7 @@ static void record_if_due() {
 
   File file = LittleFS.open("/last_run.csv", "a");
   if (file) {
-    file.printf("%.3f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f\n", 
+    file.printf("%.3f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f\n", 
                 t_s, f[0], t[0], f[1], t[1], f[2], t[2], f[3], t[3]);
     file.close();
   }
