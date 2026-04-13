@@ -10,8 +10,9 @@ static ESP8266WebServer _server(80);
 
 // Provided by the .ino
 extern void get_ui_snapshot(
-  float& s1_flow_1s, float& s1_temp_1s, float& s1_mean10, float& s1_rms10, float& s1_cv10, bool& ok1,
-  float& s2_flow_1s, float& s2_temp_1s, float& s2_mean10, float& s2_rms10, float& s2_cv10, bool& ok2,
+  float s_flow_1s[NUM_SENSORS], float s_temp_1s[NUM_SENSORS], 
+  float s_mean10[NUM_SENSORS], float s_rms10[NUM_SENSORS], float s_cv10[NUM_SENSORS], 
+  bool s_ok_out[NUM_SENSORS],
   bool& is_recording, bool& is_csv_ready
 );
 extern void start_run();
@@ -78,6 +79,34 @@ static const char _PAGE_INDEX[] PROGMEM = R"HTML(<!doctype html>
   </div>
 
   <div class="card">
+    <div class="label">Sensor 3</div>
+    <div class="row">
+      <div class="pill">Temp: <span id="s3-temp">--</span> °C</div>
+      <div class="pill">Status: <span id="s3-ok">--</span></div>
+    </div>
+    <div class="bigline">Mean(mL/min): <span id="s3-mean">--</span></div>
+    <div class="bigline">RMS(mL/min):  <span id="s3-rms">--</span></div>
+    <table>
+      <thead><tr><th>Number</th><th>Flow (mL/min)</th><th>Temp (°C)</th></tr></thead>
+      <tbody id="s3-body"></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="label">Sensor 4</div>
+    <div class="row">
+      <div class="pill">Temp: <span id="s4-temp">--</span> °C</div>
+      <div class="pill">Status: <span id="s4-ok">--</span></div>
+    </div>
+    <div class="bigline">Mean(mL/min): <span id="s4-mean">--</span></div>
+    <div class="bigline">RMS(mL/min):  <span id="s4-rms">--</span></div>
+    <table>
+      <thead><tr><th>Number</th><th>Flow (mL/min)</th><th>Temp (°C)</th></tr></thead>
+      <tbody id="s4-body"></tbody>
+    </table>
+  </div>
+
+  <div class="card">
     <div class="label">Controls</div>
     <div class="row" style="margin-top:8px">
       <button id="btnStart" class="btn-green">Start</button>
@@ -98,7 +127,9 @@ static const char _PAGE_INDEX[] PROGMEM = R"HTML(<!doctype html>
 const setText=(id,v)=>document.getElementById(id).textContent=v;
 
 const MAX_ROWS = 10;
-let s1 = [], s2 = [];
+let s1 = [], s2 = [], s3 = [], s4 = [];
+const sensorBuffers = [s1, s2, s3, s4];
+
 function addRow(buf, obj){ buf.unshift(obj); if(buf.length > MAX_ROWS) buf.pop(); }
 function renderTable(tbodyId, buf){
   const tbody = document.getElementById(tbodyId);
@@ -116,11 +147,14 @@ let interval=)HTML" STR(POLL_INTERVAL_MS) R"HTML(, timer=null;
 let metricsTick = 0;
 
 function clearUI(){
-  setText('s1-mean','--'); setText('s1-rms','--'); setText('s1-cv','--');
-  setText('s2-mean','--'); setText('s2-rms','--'); setText('s2-cv','--');
-  setText('s1-temp','--'); setText('s1-ok','--');
-  setText('s2-temp','--'); setText('s2-ok','--');
-  s1=[]; s2=[]; renderTable('s1-body', s1); renderTable('s2-body', s2);
+  for (let i = 1; i <= 4; i++) {
+    setText(`s${i}-mean`,'--'); setText(`s${i}-rms`,'--'); setText(`s${i}-cv`,'--');
+    setText(`s${i}-temp`,'--'); setText(`s${i}-ok`,'--');
+  }
+  s1=[]; s2=[]; s3=[]; s4=[]; 
+  for (let i = 1; i <= 4; i++) {
+    renderTable(`s${i}-body`, sensorBuffers[i-1]);
+  }
   metricsTick = 0;
 }
 
@@ -137,26 +171,25 @@ async function pull(){
     if (j.run.recording) { startBtn.disabled = true;  stopBtn.disabled = false; dlBtn.style.display = 'none'; }
     else                 { startBtn.disabled = false; stopBtn.disabled = true;  dlBtn.style.display = j.run.csv_ready ? 'inline-block' : 'none'; }
 
-    // 1 s badges + rolling tables (always streaming)
-    setText('s1-temp', j.s1.temp_1s.toFixed(2));
-    setText('s1-ok', j.s1.ok ? 'OK' : 'ERR');
-    setText('s2-temp', j.s2.temp_1s.toFixed(2));
-    setText('s2-ok', j.s2.ok ? 'OK' : 'ERR');
-
-    addRow(s1, {flow:j.s1.flow_1s, temp:j.s1.temp_1s});
-    addRow(s2, {flow:j.s2.flow_1s, temp:j.s2.temp_1s});
-    renderTable('s1-body', s1);
-    renderTable('s2-body', s2);
+    // 1 s badges + rolling tables for all 4 sensors
+    for (let i = 1; i <= 4; i++) {
+      const sensor = j[`s${i}`];
+      setText(`s${i}-temp`, sensor.temp_1s.toFixed(2));
+      setText(`s${i}-ok`, sensor.ok ? 'OK' : 'ERR');
+      
+      addRow(sensorBuffers[i-1], {flow: sensor.flow_1s, temp: sensor.temp_1s});
+      renderTable(`s${i}-body`, sensorBuffers[i-1]);
+    }
 
     // 10 s metrics — update every 10 polls (≈10 s at 1 Hz)
     metricsTick = (metricsTick + 1) % 10;
     if (metricsTick === 0) {
-      setText('s1-mean', j.s1.mean10.toFixed(2));
-      setText('s1-rms',  j.s1.rms10.toFixed(2));
-      setText('s1-cv',   j.s1.cv10.toFixed(2));
-      setText('s2-mean', j.s2.mean10.toFixed(2));
-      setText('s2-rms',  j.s2.rms10.toFixed(2));
-      setText('s2-cv',   j.s2.cv10.toFixed(2));
+      for (let i = 1; i <= 4; i++) {
+        const sensor = j[`s${i}`];
+        setText(`s${i}-mean`, sensor.mean10.toFixed(2));
+        setText(`s${i}-rms`,  sensor.rms10.toFixed(2));
+        setText(`s${i}-cv`,   sensor.cv10.toFixed(2));
+      }
     }
 
   }catch(e){ console.error(e); }
@@ -182,23 +215,24 @@ document.getElementById('btnStop').addEventListener('click', async ()=>{
 static void _handle_root(){ _server.send_P(200, "text/html", _PAGE_INDEX); }
 
 static void _handle_api(){
-  float f1_1s,t1_1s,f2_1s,t2_1s;
-  float m1,r1,cv1,m2,r2,cv2;
-  bool ok1,ok2,rec,csv;
-  get_ui_snapshot(f1_1s,t1_1s,m1,r1,cv1, ok1,
-                  f2_1s,t2_1s,m2,r2,cv2, ok2,
-                  rec,csv);
+  float f_1s[NUM_SENSORS], t_1s[NUM_SENSORS];
+  float m[NUM_SENSORS], r[NUM_SENSORS], cv[NUM_SENSORS];
+  bool ok[NUM_SENSORS];
+  bool rec, csv;
+  
+  get_ui_snapshot(f_1s, t_1s, m, r, cv, ok, rec, csv);
 
   String j = "{";
-  j += "\"s1\":{";
-  j += "\"flow_1s\":" + String(f1_1s,3) + ",\"temp_1s\":" + String(t1_1s,3) + ",";
-  j += "\"mean10\":" + String(m1,3)    + ",\"rms10\":" + String(r1,3) + ",\"cv10\":" + String(cv1,2) + ",";
-  j += "\"ok\":" + String(ok1 ? "true" : "false") + "},";
-  j += "\"s2\":{";
-  j += "\"flow_1s\":" + String(f2_1s,3) + ",\"temp_1s\":" + String(t2_1s,3) + ",";
-  j += "\"mean10\":" + String(m2,3)    + ",\"rms10\":" + String(r2,3) + ",\"cv10\":" + String(cv2,2) + ",";
-  j += "\"ok\":" + String(ok2 ? "true" : "false") + "},";
-  j += "\"run\":{";
+  for (int i = 0; i < NUM_SENSORS; i++) {
+    j += "\"s" + String(i+1) + "\":{";
+    j += "\"flow_1s\":" + String(f_1s[i],3) + ",\"temp_1s\":" + String(t_1s[i],3) + ",";
+    j += "\"mean10\":" + String(m[i],3) + ",\"rms10\":" + String(r[i],3) + ",\"cv10\":" + String(cv[i],2) + ",";
+    j += "\"ok\":" + String(ok[i] ? "true" : "false") + ",";
+    j += "\"enabled\":" + String(get_sensor_enabled((uint8_t)(i + 1)) ? "true" : "false");
+    j += "}";
+    if (i < NUM_SENSORS - 1) j += ",";
+  }
+  j += ",\"run\":{";
   j += "\"recording\":" + String(rec ? "true" : "false") + ",\"csv_ready\":" + String(csv ? "true" : "false");
   j += "}}";
   _server.send(200, "application/json", j);
