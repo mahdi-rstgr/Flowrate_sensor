@@ -5,8 +5,8 @@
 #include "web.h"
 
 // Wi-Fi 
-const char* WIFI_SSID = "NAME_OF_WIFI";
-const char* WIFI_PASS = "YOUR_PASSWORD";
+const char* WIFI_SSID = "AC-IoT-Cudy-18DC";
+const char* WIFI_PASS = "31185981";
 const char* MDNS_HOST = "xyz";
 
 static void wifi_connect() {
