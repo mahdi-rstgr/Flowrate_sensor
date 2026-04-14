@@ -49,7 +49,6 @@ static bool csv_ready = false;
 static unsigned long run_start_ms = 0;
 static unsigned long last_record_ms = 0;
 static const unsigned long RECORD_MS = 10000;  // 10.0 s
-static const unsigned long RECORD_MS = 10000;  // 10.0 s
 
 // helpers 
 static inline int wrap(int i) { return (i + N10) % N10; }
