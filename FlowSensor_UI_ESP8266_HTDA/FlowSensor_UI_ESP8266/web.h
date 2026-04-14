@@ -27,194 +27,257 @@ static const char _PAGE_INDEX[] PROGMEM = R"HTML(<!doctype html>
 <style>
   :root { --bg:#4285f4; --card:#ffffff; --fg:#202124; --muted:#5f6368; --line:#dadce0; }
   *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto}
-  header{padding:18px 20px;text-align:center;font-weight:800;letter-spacing:.3px}
-  .grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));padding:0 16px 24px;max-width:1200px;margin:0 auto}
-  .card{background:var(--card);border-radius:16px;padding:16px 18px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
-  .label{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.12em;margin-bottom:8px}
-  .bigline{font-size:26px;font-weight:800;margin:6px 0 6px}
-  .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
-  .pill{font-size:12px;padding:6px 10px;background:#f8f9fa;border:1px solid var(--line);border-radius:999px;color:var(--muted)}
-  table{width:100%;border-collapse:collapse;border:1px solid var(--line);border-radius:12px;overflow:hidden}
-  thead{background:#f8f9fa;color:var(--muted)}
-  th,td{padding:8px 10px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums;text-align:center}
-  tr:nth-child(even){background:#f8f9fa}
-  button{background:#34a853;color:#ffffff;border:1px solid #34a853;border-radius:10px;padding:8px 12px;cursor:pointer}
+  header{padding:18px 20px;text-align:center;font-weight:800;letter-spacing:.3px;color:#ffffff}
+  .container{display:flex;gap:16px;padding:16px;max-width:1400px;margin:0 auto}
+  .channel{flex:1;background:var(--card);border-radius:16px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+  .channel-title{font-size:24px;font-weight:800;text-align:center;color:var(--fg);margin-bottom:16px}
+  .mean-value{font-size:20px;font-weight:600;text-align:center;margin-bottom:20px;color:#34a853}
+  .plot-container{width:100%;height:200px;border:1px solid var(--line);border-radius:8px;background:#fafafa}
+  .plot-canvas{width:100%;height:100%;border-radius:8px}
+  .controls{position:fixed;bottom:20px;right:20px;background:var(--card);padding:12px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,.15)}
+  button{background:#34a853;color:#ffffff;border:1px solid #34a853;border-radius:8px;padding:8px 12px;cursor:pointer;margin-right:8px}
   button:active{transform:translateY(1px)}
-  .btn-green{background:#34a853;border-color:#34a853}
   .btn-red{background:#ea4335;border-color:#ea4335}
-  a.download{display:inline-block;text-decoration:none;color:#ffffff;background:#34a853;border:1px solid #34a853;border-radius:10px;padding:8px 12px}
-  footer{color:var(--muted);text-align:center;font-size:12px;padding:10px 0 22px}
+  a.download{display:inline-block;text-decoration:none;color:#ffffff;background:#34a853;border:1px solid #34a853;border-radius:8px;padding:8px 12px}
+  .status{font-size:12px;color:var(--muted);text-align:center;margin-top:8px}
 </style>
 </head>
 <body>
-<header>Flow Sensors</header>
+<header>Flow Rate Monitoring System</header>
 
-<div class="grid">
-  <div class="card">
-    <div class="label">Sensor 1</div>
-    <div class="row">
-      <div class="pill">Temp: <span id="s1-temp">--</span> °C</div>
-      <div class="pill">Status: <span id="s1-ok">--</span></div>
+<div class="container">
+  <div class="channel">
+    <div class="channel-title">Channel 1</div>
+    <div class="mean-value">Mean: <span id="ch1-mean">--</span> mL/min</div>
+    <div class="plot-container">
+      <canvas id="plot1" class="plot-canvas" width="300" height="200"></canvas>
     </div>
-    <div class="bigline">Mean(mL/min): <span id="s1-mean">--</span></div>
-    <div class="bigline">RMS(mL/min):  <span id="s1-rms">--</span></div>
-    <table>
-      <thead><tr><th>Number</th><th>Flow (mL/min)</th><th>Temp (°C)</th></tr></thead>
-      <tbody id="s1-body"></tbody>
-    </table>
+    <div class="status">Status: <span id="ch1-status">--</span></div>
   </div>
 
-  <div class="card">
-    <div class="label">Sensor 2</div>
-    <div class="row">
-      <div class="pill">Temp: <span id="s2-temp">--</span> °C</div>
-      <div class="pill">Status: <span id="s2-ok">--</span></div>
+  <div class="channel">
+    <div class="channel-title">Channel 2</div>
+    <div class="mean-value">Mean: <span id="ch2-mean">--</span> mL/min</div>
+    <div class="plot-container">
+      <canvas id="plot2" class="plot-canvas" width="300" height="200"></canvas>
     </div>
-    <div class="bigline">Mean(mL/min): <span id="s2-mean">--</span></div>
-    <div class="bigline">RMS(mL/min):  <span id="s2-rms">--</span></div>
-    <table>
-      <thead><tr><th>Number</th><th>Flow (mL/min)</th><th>Temp (°C)</th></tr></thead>
-      <tbody id="s2-body"></tbody>
-    </table>
+    <div class="status">Status: <span id="ch2-status">--</span></div>
   </div>
 
-  <div class="card">
-    <div class="label">Sensor 3</div>
-    <div class="row">
-      <div class="pill">Temp: <span id="s3-temp">--</span> °C</div>
-      <div class="pill">Status: <span id="s3-ok">--</span></div>
+  <div class="channel">
+    <div class="channel-title">Channel 3</div>
+    <div class="mean-value">Mean: <span id="ch3-mean">--</span> mL/min</div>
+    <div class="plot-container">
+      <canvas id="plot3" class="plot-canvas" width="300" height="200"></canvas>
     </div>
-    <div class="bigline">Mean(mL/min): <span id="s3-mean">--</span></div>
-    <div class="bigline">RMS(mL/min):  <span id="s3-rms">--</span></div>
-    <table>
-      <thead><tr><th>Number</th><th>Flow (mL/min)</th><th>Temp (°C)</th></tr></thead>
-      <tbody id="s3-body"></tbody>
-    </table>
+    <div class="status">Status: <span id="ch3-status">--</span></div>
   </div>
 
-  <div class="card">
-    <div class="label">Sensor 4</div>
-    <div class="row">
-      <div class="pill">Temp: <span id="s4-temp">--</span> °C</div>
-      <div class="pill">Status: <span id="s4-ok">--</span></div>
+  <div class="channel">
+    <div class="channel-title">Channel 4</div>
+    <div class="mean-value">Mean: <span id="ch4-mean">--</span> mL/min</div>
+    <div class="plot-container">
+      <canvas id="plot4" class="plot-canvas" width="300" height="200"></canvas>
     </div>
-    <div class="bigline">Mean(mL/min): <span id="s4-mean">--</span></div>
-    <div class="bigline">RMS(mL/min):  <span id="s4-rms">--</span></div>
-    <table>
-      <thead><tr><th>Number</th><th>Flow (mL/min)</th><th>Temp (°C)</th></tr></thead>
-      <tbody id="s4-body"></tbody>
-    </table>
-  </div>
-
-  <div class="card">
-    <div class="label">Controls</div>
-    <div class="row" style="margin-top:8px">
-      <button id="btnStart" class="btn-green">Start</button>
-      <button id="btnStop" class="btn-red" disabled>Stop</button>
-      <a id="btnDownload" class="download" href="/log.csv" style="display:none">Download CSV</a>
-    </div>
-    <div class="row">
-      <div class="pill">Auto poll: <span id="auto">on</span></div>
-      <div class="pill">Last update: <span id="ts">--</span></div>
-      <div class="pill">Interval: <span id="iv">)HTML" STR(POLL_INTERVAL_MS) R"HTML(</span> ms</div>
-    </div>
+    <div class="status">Status: <span id="ch4-status">--</span></div>
   </div>
 </div>
 
-<footer>Served by ESP8266</footer>
+<div class="controls">
+  <button id="btnStart" class="btn-green">Start</button>
+  <button id="btnStop" class="btn-red" disabled>Stop</button>
+  <a id="btnDownload" class="download" href="/log.csv" style="display:none">Download CSV</a>
+</div>
 
 <script>
 const setText=(id,v)=>document.getElementById(id).textContent=v;
 
-const MAX_ROWS = 10;
-let s1 = [], s2 = [], s3 = [], s4 = [];
-const sensorBuffers = [s1, s2, s3, s4];
-
-function addRow(buf, obj){ buf.unshift(obj); if(buf.length > MAX_ROWS) buf.pop(); }
-function renderTable(tbodyId, buf){
-  const tbody = document.getElementById(tbodyId);
-  tbody.innerHTML = buf.map((r, i) => `
-    <tr>
-      <td>${i+1}</td>
-      <td>${r.flow.toFixed(2)}</td>
-      <td>${r.temp.toFixed(2)}</td>
-    </tr>`).join('');
-}
+// Data storage for each channel (30 seconds @ 1Hz = 30 points)
+const MAX_POINTS = 30;
+let channelData = [
+  {values: [], times: []}, // Channel 1
+  {values: [], times: []}, // Channel 2  
+  {values: [], times: []}, // Channel 3
+  {values: [], times: []}  // Channel 4
+];
 
 let interval=)HTML" STR(POLL_INTERVAL_MS) R"HTML(, timer=null;
 
-// 10s metrics throttle 
-let metricsTick = 0;
+function addDataPoint(channelIndex, value, time) {
+  const data = channelData[channelIndex];
+  data.values.push(value);
+  data.times.push(time);
+  
+  // Keep only last 30 points
+  if (data.values.length > MAX_POINTS) {
+    data.values.shift();
+    data.times.shift();
+  }
+}
 
-function clearUI(){
-  for (let i = 1; i <= 4; i++) {
-    setText(`s${i}-mean`,'--'); setText(`s${i}-rms`,'--'); setText(`s${i}-cv`,'--');
-    setText(`s${i}-temp`,'--'); setText(`s${i}-ok`,'--');
+function calculate30SecondMean(channelIndex) {
+  const data = channelData[channelIndex];
+  if (data.values.length === 0) return 0;
+  
+  const sum = data.values.reduce((a, b) => a + b, 0);
+  return sum / data.values.length;
+}
+
+function drawPlot(canvasId, channelIndex) {
+  const canvas = document.getElementById(canvasId);
+  const ctx = canvas.getContext('2d');
+  const data = channelData[channelIndex];
+  
+  // Clear canvas
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+  if (data.values.length < 2) return;
+  
+  // Plot settings
+  const padding = 30;
+  const plotWidth = canvas.width - 2 * padding;
+  const plotHeight = canvas.height - 2 * padding;
+  
+  // Find min/max for scaling
+  const minVal = Math.min(...data.values) - 1;
+  const maxVal = Math.max(...data.values) + 1;
+  const valRange = maxVal - minVal || 1;
+  
+  // Draw axes
+  ctx.strokeStyle = '#dadce0';
+  ctx.lineWidth = 1;
+  
+  // Y-axis
+  ctx.beginPath();
+  ctx.moveTo(padding, padding);
+  ctx.lineTo(padding, canvas.height - padding);
+  ctx.stroke();
+  
+  // X-axis
+  ctx.beginPath();
+  ctx.moveTo(padding, canvas.height - padding);
+  ctx.lineTo(canvas.width - padding, canvas.height - padding);
+  ctx.stroke();
+  
+  // Draw plot line
+  ctx.strokeStyle = '#4285f4';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  
+  for (let i = 0; i < data.values.length; i++) {
+    const x = padding + (i / (MAX_POINTS - 1)) * plotWidth;
+    const y = canvas.height - padding - ((data.values[i] - minVal) / valRange) * plotHeight;
+    
+    if (i === 0) {
+      ctx.moveTo(x, y);
+    } else {
+      ctx.lineTo(x, y);
+    }
   }
-  s1=[]; s2=[]; s3=[]; s4=[]; 
-  for (let i = 1; i <= 4; i++) {
-    renderTable(`s${i}-body`, sensorBuffers[i-1]);
-  }
-  metricsTick = 0;
+  ctx.stroke();
+  
+  // Draw value labels
+  ctx.fillStyle = '#5f6368';
+  ctx.font = '10px Arial';
+  ctx.fillText(maxVal.toFixed(1), 5, padding);
+  ctx.fillText(minVal.toFixed(1), 5, canvas.height - padding);
 }
 
 async function pull(){
   try{
     const r = await fetch('/api',{cache:'no-store'});
     const j = await r.json();
-    setText('ts', new Date().toLocaleTimeString());
+    const currentTime = Date.now();
 
-    // buttons state (recording only affects CSV)
+    // Update button states
     const startBtn = document.getElementById('btnStart');
     const stopBtn  = document.getElementById('btnStop');
     const dlBtn    = document.getElementById('btnDownload');
-    if (j.run.recording) { startBtn.disabled = true;  stopBtn.disabled = false; dlBtn.style.display = 'none'; }
-    else                 { startBtn.disabled = false; stopBtn.disabled = true;  dlBtn.style.display = j.run.csv_ready ? 'inline-block' : 'none'; }
+    if (j.run.recording) { 
+      startBtn.disabled = true;  
+      stopBtn.disabled = false; 
+      dlBtn.style.display = 'none'; 
+    } else { 
+      startBtn.disabled = false; 
+      stopBtn.disabled = true;  
+      dlBtn.style.display = j.run.csv_ready ? 'inline-block' : 'none'; 
+    }
 
-    // 1 s badges + rolling tables for all 4 sensors
+    // Update each channel
     for (let i = 1; i <= 4; i++) {
       const sensor = j[`s${i}`];
-      setText(`s${i}-temp`, sensor.temp_1s.toFixed(2));
-      setText(`s${i}-ok`, sensor.ok ? 'OK' : 'ERR');
       
-      addRow(sensorBuffers[i-1], {flow: sensor.flow_1s, temp: sensor.temp_1s});
-      renderTable(`s${i}-body`, sensorBuffers[i-1]);
+      // Add new data point
+      addDataPoint(i-1, sensor.flow_1s, currentTime);
+      
+      // Calculate and display 30-second mean
+      const mean30s = calculate30SecondMean(i-1);
+      setText(`ch${i}-mean`, mean30s.toFixed(2));
+      
+      // Update status
+      setText(`ch${i}-status`, sensor.ok ? 'Connected' : 'Error');
+      
+      // Draw plot
+      drawPlot(`plot${i}`, i-1);
     }
 
-    // 10 s metrics — update every 10 polls (≈10 s at 1 Hz)
-    metricsTick = (metricsTick + 1) % 10;
-    if (metricsTick === 0) {
-      for (let i = 1; i <= 4; i++) {
-        const sensor = j[`s${i}`];
-        setText(`s${i}-mean`, sensor.mean10.toFixed(2));
-        setText(`s${i}-rms`,  sensor.rms10.toFixed(2));
-        setText(`s${i}-cv`,   sensor.cv10.toFixed(2));
-      }
+  }catch(e){ 
+    console.error('Error fetching data:', e); 
+    for (let i = 1; i <= 4; i++) {
+      setText(`ch${i}-status`, 'Connection Error');
     }
-
-  }catch(e){ console.error(e); }
+  }
 }
 
-function startPolling(){ if(timer) clearInterval(timer); timer=setInterval(pull, interval); setText('auto','on'); }
+function startPolling(){ 
+  if(timer) clearInterval(timer); 
+  timer=setInterval(pull, interval);
+}
+
 startPolling();
 
-// Start/Stop (only affects recording)
+// Start/Stop recording controls
 document.getElementById('btnStart').addEventListener('click', async ()=>{
-  metricsTick = 0;
   try{ await fetch('/start', {method:'POST'}); }catch(e){}
   pull();
 });
+
 document.getElementById('btnStop').addEventListener('click', async ()=>{
   try{ await fetch('/stop', {method:'POST'}); }catch(e){}
   pull();
 });
+
+// Initial data fetch
+pull();
 </script>
 </body></html>)HTML";
 
-// HTTP 
+// HTTP Handlers
 static void _handle_root(){ _server.send_P(200, "text/html", _PAGE_INDEX); }
 
 static void _handle_api(){
+  float f_1s[NUM_SENSORS], t_1s[NUM_SENSORS];
+  float m[NUM_SENSORS], r[NUM_SENSORS], cv[NUM_SENSORS];
+  bool ok[NUM_SENSORS];
+  bool rec, csv;
+  
+  get_ui_snapshot(f_1s, t_1s, m, r, cv, ok, rec, csv);
+
+  String j = "{";
+  for (int i = 0; i < NUM_SENSORS; i++) {
+    j += "\"s" + String(i+1) + "\":{";
+    j += "\"flow_1s\":" + String(f_1s[i],3) + ",\"temp_1s\":" + String(t_1s[i],3) + ",";
+    j += "\"mean10\":" + String(m[i],3) + ",\"rms10\":" + String(r[i],3) + ",\"cv10\":" + String(cv[i],2) + ",";
+    j += "\"ok\":" + String(ok[i] ? "true" : "false") + ",";
+    j += "\"enabled\":" + String(get_sensor_enabled((uint8_t)(i + 1)) ? "true" : "false");
+    j += "}";
+    if (i < NUM_SENSORS - 1) j += ",";
+  }
+  j += ",\"run\":{";
+  j += "\"recording\":" + String(rec ? "true" : "false") + ",\"csv_ready\":" + String(csv ? "true" : "false");
+  j += "}}";
+  _server.send(200, "application/json", j);
+}
   float f_1s[NUM_SENSORS], t_1s[NUM_SENSORS];
   float m[NUM_SENSORS], r[NUM_SENSORS], cv[NUM_SENSORS];
   bool ok[NUM_SENSORS];
