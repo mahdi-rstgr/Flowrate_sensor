@@ -429,7 +429,7 @@ bool stream_csv_to_client(ESP8266WebServer& server) {
     for (int i = 0; i < NUM_SENSORS; i++) {
       // Check if sensor was enabled when recorded
       if (record.enabled_mask & (1 << i)) {
-        csvLine += "," + String(record.flow[i], 2) + "," + String(record.temp[i], 1);
+        csvLine += "," + String(record.flow[i], 3) + "," + String(record.temp[i], 1);
       } else {
         csvLine += ",,";  // Empty cells for disabled sensor
       }
