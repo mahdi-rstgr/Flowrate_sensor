@@ -49,6 +49,7 @@ static bool csv_ready = false;
 static unsigned long run_start_ms = 0;
 static unsigned long last_record_ms = 0;
 static const unsigned long RECORD_MS = 10000;  // 10.0 s
+static const unsigned long RECORD_MS = 10000;  // 10.0 s
 
 // helpers 
 static inline int wrap(int i) { return (i + N10) % N10; }
@@ -183,6 +184,7 @@ static void record_if_due() {
   if (now - last_record_ms < RECORD_MS) return;
   last_record_ms = now;
 
+  // Calculate mean over 10-second interval (200 samples @ 20Hz)
   int n = min(buf_count, 200); // ~10.0 s @ 20 Hz
   if (n == 0) return;
   

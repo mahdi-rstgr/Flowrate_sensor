@@ -25,7 +25,7 @@ static const char _PAGE_INDEX[] PROGMEM = R"HTML(<!doctype html>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Flow Sensors</title>
 <style>
-  :root { --bg:#0f172a; --card:#111827; --fg:#e5e7eb; --muted:#94a3b8; --line:#1f2937; }
+  :root { --bg:#4285f4; --card:#ffffff; --fg:#202124; --muted:#5f6368; --line:#dadce0; }
   *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto}
   header{padding:18px 20px;text-align:center;font-weight:800;letter-spacing:.3px}
   .grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));padding:0 16px 24px;max-width:1200px;margin:0 auto}
@@ -33,16 +33,16 @@ static const char _PAGE_INDEX[] PROGMEM = R"HTML(<!doctype html>
   .label{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.12em;margin-bottom:8px}
   .bigline{font-size:26px;font-weight:800;margin:6px 0 6px}
   .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
-  .pill{font-size:12px;padding:6px 10px;background:#0b1220;border:1px solid var(--line);border-radius:999px;color:var(--muted)}
+  .pill{font-size:12px;padding:6px 10px;background:#f8f9fa;border:1px solid var(--line);border-radius:999px;color:var(--muted)}
   table{width:100%;border-collapse:collapse;border:1px solid var(--line);border-radius:12px;overflow:hidden}
-  thead{background:#0b1220;color:var(--muted)}
+  thead{background:#f8f9fa;color:var(--muted)}
   th,td{padding:8px 10px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums;text-align:center}
-  tr:nth-child(even){background:#0d1322}
-  button{background:#1f2937;color:#d1d5db;border:1px solid #374151;border-radius:10px;padding:8px 12px;cursor:pointer}
+  tr:nth-child(even){background:#f8f9fa}
+  button{background:#34a853;color:#ffffff;border:1px solid #34a853;border-radius:10px;padding:8px 12px;cursor:pointer}
   button:active{transform:translateY(1px)}
-  .btn-green{background:#065f46;border-color:#065f46}
-  .btn-red{background:#7f1d1d;border-color:#7f1d1d}
-  a.download{display:inline-block;text-decoration:none;color:#d1d5db;background:#1f2937;border:1px solid #374151;border-radius:10px;padding:8px 12px}
+  .btn-green{background:#34a853;border-color:#34a853}
+  .btn-red{background:#ea4335;border-color:#ea4335}
+  a.download{display:inline-block;text-decoration:none;color:#ffffff;background:#34a853;border:1px solid #34a853;border-radius:10px;padding:8px 12px}
   footer{color:var(--muted);text-align:center;font-size:12px;padding:10px 0 22px}
 </style>
 </head>
