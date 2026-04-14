@@ -23,69 +23,119 @@ extern bool stream_csv_to_client(ESP8266WebServer& server);
 static const char _PAGE_INDEX[] PROGMEM = R"HTML(<!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Flow Sensors</title>
+<title>High Throughput Dissolution/Permeation Apparatus</title>
 <style>
-  :root { --bg:#4285f4; --card:#ffffff; --fg:#202124; --muted:#5f6368; --line:#dadce0; }
-  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto}
-  header{padding:18px 20px;text-align:center;font-weight:800;letter-spacing:.3px;color:#ffffff}
-  .container{display:flex;gap:16px;padding:16px;max-width:1400px;margin:0 auto}
-  .channel{flex:1;background:var(--card);border-radius:16px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
-  .channel-title{font-size:24px;font-weight:800;text-align:center;color:var(--fg);margin-bottom:16px}
-  .mean-value{font-size:20px;font-weight:600;text-align:center;margin-bottom:20px;color:#34a853}
-  .plot-container{width:100%;height:200px;border:1px solid var(--line);border-radius:8px;background:#fafafa}
+  :root { --bg:#000000; --card:#1a1a1a; --fg:#ffffff; --muted:#cccccc; --line:#333333; }
+  *{box-sizing:border-box} 
+  body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto;overflow-x:hidden}
+  
+  .banner{background:var(--card);padding:20px 30px;display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid var(--line)}
+  .banner-text{flex:1}
+  .banner-text h1{margin:0;font-size:28px;font-weight:bold;color:#00ff00;line-height:1.2}
+  .banner-text h2{margin:5px 0 0 0;font-size:20px;font-weight:600;color:#00aaff;line-height:1.2}
+  .banner-text h3{margin:5px 0 0 0;font-size:16px;font-weight:400;color:var(--muted);line-height:1.2}
+  .banner-logo{flex-shrink:0;margin-left:30px}
+  .banner-logo img{height:80px;width:auto}
+  
+  .container{padding:20px;max-width:1400px;margin:0 auto}
+  
+  .plot-section{background:var(--card);border-radius:12px;padding:20px;margin-bottom:20px;border:1px solid var(--line)}
+  .plot-title{font-size:24px;font-weight:700;text-align:center;margin-bottom:15px;color:var(--fg)}
+  .legend{display:flex;justify-content:center;gap:30px;margin-bottom:15px;flex-wrap:wrap}
+  .legend-item{display:flex;align-items:center;gap:8px;padding:8px 12px;background:#2a2a2a;border-radius:8px}
+  .legend-color{width:20px;height:3px;border-radius:2px}
+  .legend-text{font-size:14px;font-weight:600}
+  .legend-mean{font-size:12px;color:var(--muted)}
+  
+  .plot-container{width:100%;height:300px;border:1px solid var(--line);border-radius:8px;background:#0a0a0a;margin:0 auto}
   .plot-canvas{width:100%;height:100%;border-radius:8px}
-  .controls{position:fixed;bottom:20px;right:20px;background:var(--card);padding:12px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,.15)}
-  button{background:#34a853;color:#ffffff;border:1px solid #34a853;border-radius:8px;padding:8px 12px;cursor:pointer;margin-right:8px}
-  button:active{transform:translateY(1px)}
-  .btn-red{background:#ea4335;border-color:#ea4335}
-  a.download{display:inline-block;text-decoration:none;color:#ffffff;background:#34a853;border:1px solid #34a853;border-radius:8px;padding:8px 12px}
-  .status{font-size:12px;color:var(--muted);text-align:center;margin-top:8px}
+  
+  .controls{position:fixed;bottom:20px;right:20px;background:var(--card);padding:15px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,.5);border:1px solid var(--line)}
+  .controls button{background:#00aa00;color:#ffffff;border:1px solid #00aa00;border-radius:8px;padding:10px 15px;cursor:pointer;margin-right:10px;font-weight:600}
+  .controls button:hover{background:#00cc00}
+  .controls button:active{transform:translateY(1px)}
+  .controls .btn-red{background:#cc0000;border-color:#cc0000}
+  .controls .btn-red:hover{background:#ee0000}
+  .controls a.download{display:inline-block;text-decoration:none;color:#ffffff;background:#0066cc;border:1px solid #0066cc;border-radius:8px;padding:10px 15px;font-weight:600}
+  .controls a.download:hover{background:#0088ee}
 </style>
 </head>
 <body>
-<header>Flow Rate Monitoring System</header>
+
+<div class="banner">
+  <div class="banner-text">
+    <h1>Self-Driving Lab. #5</h1>
+    <h2>Formulation</h2>
+    <h3>High Throughput Dissolution/Permeation Apparatus for Automated Platform</h3>
+  </div>
+  <div class="banner-logo">
+    <img src="logo.png" alt="Lab Logo">
+  </div>
+</div>
 
 <div class="container">
-  <div class="channel">
-    <div class="channel-title">Channel 1</div>
-    <div class="mean-value">Mean: <span id="ch1-mean">--</span> mL/min</div>
-    <div class="plot-container">
-      <canvas id="plot1" class="plot-canvas" width="300" height="200"></canvas>
+  <div class="plot-section">
+    <div class="plot-title">Flowrate vs Time</div>
+    <div class="legend" id="flowrate-legend">
+      <div class="legend-item">
+        <div class="legend-color" style="background:#ff0000"></div>
+        <div class="legend-text">Channel 1</div>
+        <div class="legend-mean">Mean: <span id="ch1-mean">--</span> mL/min</div>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background:#00ff00"></div>
+        <div class="legend-text">Channel 2</div>
+        <div class="legend-mean">Mean: <span id="ch2-mean">--</span> mL/min</div>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background:#0080ff"></div>
+        <div class="legend-text">Channel 3</div>
+        <div class="legend-mean">Mean: <span id="ch3-mean">--</span> mL/min</div>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background:#ffff00"></div>
+        <div class="legend-text">Channel 4</div>
+        <div class="legend-mean">Mean: <span id="ch4-mean">--</span> mL/min</div>
+      </div>
     </div>
-    <div class="status">Status: <span id="ch1-status">--</span></div>
+    <div class="plot-container">
+      <canvas id="flowrate-plot" class="plot-canvas" width="1200" height="300"></canvas>
+    </div>
   </div>
 
-  <div class="channel">
-    <div class="channel-title">Channel 2</div>
-    <div class="mean-value">Mean: <span id="ch2-mean">--</span> mL/min</div>
-    <div class="plot-container">
-      <canvas id="plot2" class="plot-canvas" width="300" height="200"></canvas>
+  <div class="plot-section">
+    <div class="plot-title">Temperature vs Time</div>
+    <div class="legend" id="temperature-legend">
+      <div class="legend-item">
+        <div class="legend-color" style="background:#ff0000"></div>
+        <div class="legend-text">Channel 1</div>
+        <div class="legend-mean">Temp: <span id="ch1-temp">--</span> °C</div>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background:#00ff00"></div>
+        <div class="legend-text">Channel 2</div>
+        <div class="legend-mean">Temp: <span id="ch2-temp">--</span> °C</div>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background:#0080ff"></div>
+        <div class="legend-text">Channel 3</div>
+        <div class="legend-mean">Temp: <span id="ch3-temp">--</span> °C</div>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background:#ffff00"></div>
+        <div class="legend-text">Channel 4</div>
+        <div class="legend-mean">Temp: <span id="ch4-temp">--</span> °C</div>
+      </div>
     </div>
-    <div class="status">Status: <span id="ch2-status">--</span></div>
-  </div>
-
-  <div class="channel">
-    <div class="channel-title">Channel 3</div>
-    <div class="mean-value">Mean: <span id="ch3-mean">--</span> mL/min</div>
     <div class="plot-container">
-      <canvas id="plot3" class="plot-canvas" width="300" height="200"></canvas>
+      <canvas id="temperature-plot" class="plot-canvas" width="1200" height="300"></canvas>
     </div>
-    <div class="status">Status: <span id="ch3-status">--</span></div>
-  </div>
-
-  <div class="channel">
-    <div class="channel-title">Channel 4</div>
-    <div class="mean-value">Mean: <span id="ch4-mean">--</span> mL/min</div>
-    <div class="plot-container">
-      <canvas id="plot4" class="plot-canvas" width="300" height="200"></canvas>
-    </div>
-    <div class="status">Status: <span id="ch4-status">--</span></div>
   </div>
 </div>
 
 <div class="controls">
-  <button id="btnStart" class="btn-green">Start</button>
-  <button id="btnStop" class="btn-red" disabled>Stop</button>
+  <button id="btnStart">Start Recording</button>
+  <button id="btnStop" class="btn-red" disabled>Stop Recording</button>
   <a id="btnDownload" class="download" href="/log.csv" style="display:none">Download CSV</a>
 </div>
 
@@ -95,56 +145,77 @@ const setText=(id,v)=>document.getElementById(id).textContent=v;
 // Data storage for each channel (30 seconds @ 1Hz = 30 points)
 const MAX_POINTS = 30;
 let channelData = [
-  {values: [], times: []}, // Channel 1
-  {values: [], times: []}, // Channel 2  
-  {values: [], times: []}, // Channel 3
-  {values: [], times: []}  // Channel 4
+  {flowValues: [], tempValues: [], times: []}, // Channel 1
+  {flowValues: [], tempValues: [], times: []}, // Channel 2  
+  {flowValues: [], tempValues: [], times: []}, // Channel 3
+  {flowValues: [], tempValues: [], times: []}  // Channel 4
 ];
 
 let interval=)HTML" STR(POLL_INTERVAL_MS) R"HTML(, timer=null;
+let startTime = Date.now();
 
-function addDataPoint(channelIndex, value, time) {
+// Channel colors
+const channelColors = ['#ff0000', '#00ff00', '#0080ff', '#ffff00'];
+
+function addDataPoint(channelIndex, flowValue, tempValue) {
   const data = channelData[channelIndex];
-  data.values.push(value);
-  data.times.push(time);
+  const currentTime = (Date.now() - startTime) / 1000; // seconds since start
+  
+  data.flowValues.push(flowValue);
+  data.tempValues.push(tempValue);
+  data.times.push(currentTime);
   
   // Keep only last 30 points
-  if (data.values.length > MAX_POINTS) {
-    data.values.shift();
+  if (data.flowValues.length > MAX_POINTS) {
+    data.flowValues.shift();
+    data.tempValues.shift();
     data.times.shift();
   }
 }
 
-function calculate30SecondMean(channelIndex) {
+function calculate30SecondMean(channelIndex, type) {
   const data = channelData[channelIndex];
-  if (data.values.length === 0) return 0;
+  const values = type === 'flow' ? data.flowValues : data.tempValues;
+  if (values.length === 0) return 0;
   
-  const sum = data.values.reduce((a, b) => a + b, 0);
-  return sum / data.values.length;
+  const sum = values.reduce((a, b) => a + b, 0);
+  return sum / values.length;
 }
 
-function drawPlot(canvasId, channelIndex) {
+function drawMultiLinePlot(canvasId, dataType) {
   const canvas = document.getElementById(canvasId);
   const ctx = canvas.getContext('2d');
-  const data = channelData[channelIndex];
   
   // Clear canvas
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   
-  if (data.values.length < 2) return;
-  
   // Plot settings
-  const padding = 30;
+  const padding = 50;
   const plotWidth = canvas.width - 2 * padding;
   const plotHeight = canvas.height - 2 * padding;
   
-  // Find min/max for scaling
-  const minVal = Math.min(...data.values) - 1;
-  const maxVal = Math.max(...data.values) + 1;
+  // Find overall min/max for scaling
+  let allValues = [];
+  let allTimes = [];
+  for (let ch = 0; ch < 4; ch++) {
+    const data = channelData[ch];
+    const values = dataType === 'flow' ? data.flowValues : data.tempValues;
+    allValues = allValues.concat(values);
+    allTimes = allTimes.concat(data.times);
+  }
+  
+  if (allValues.length === 0) return;
+  
+  const minVal = Math.min(...allValues) - 1;
+  const maxVal = Math.max(...allValues) + 1;
   const valRange = maxVal - minVal || 1;
   
+  const minTime = Math.min(...allTimes);
+  const maxTime = Math.max(...allTimes);
+  const timeRange = maxTime - minTime || 30;
+  
   // Draw axes
-  ctx.strokeStyle = '#dadce0';
+  ctx.strokeStyle = '#666666';
   ctx.lineWidth = 1;
   
   // Y-axis
@@ -159,35 +230,64 @@ function drawPlot(canvasId, channelIndex) {
   ctx.lineTo(canvas.width - padding, canvas.height - padding);
   ctx.stroke();
   
-  // Draw plot line
-  ctx.strokeStyle = '#4285f4';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
+  // Draw grid lines
+  ctx.strokeStyle = '#333333';
+  ctx.lineWidth = 0.5;
+  for (let i = 1; i <= 5; i++) {
+    const y = padding + (i * plotHeight / 6);
+    ctx.beginPath();
+    ctx.moveTo(padding, y);
+    ctx.lineTo(canvas.width - padding, y);
+    ctx.stroke();
+  }
   
-  for (let i = 0; i < data.values.length; i++) {
-    const x = padding + (i / (MAX_POINTS - 1)) * plotWidth;
-    const y = canvas.height - padding - ((data.values[i] - minVal) / valRange) * plotHeight;
+  // Draw axis labels
+  ctx.fillStyle = '#cccccc';
+  ctx.font = '12px Arial';
+  ctx.fillText(maxVal.toFixed(1), 5, padding + 5);
+  ctx.fillText(minVal.toFixed(1), 5, canvas.height - padding - 5);
+  ctx.fillText('0s', padding - 10, canvas.height - padding + 15);
+  ctx.fillText('30s', canvas.width - padding - 10, canvas.height - padding + 15);
+  
+  // Draw lines for each channel
+  for (let ch = 0; ch < 4; ch++) {
+    const data = channelData[ch];
+    const values = dataType === 'flow' ? data.flowValues : data.tempValues;
     
-    if (i === 0) {
-      ctx.moveTo(x, y);
-    } else {
-      ctx.lineTo(x, y);
+    if (values.length < 2) continue;
+    
+    ctx.strokeStyle = channelColors[ch];
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    
+    for (let i = 0; i < values.length; i++) {
+      const x = padding + ((data.times[i] - minTime) / timeRange) * plotWidth;
+      const y = canvas.height - padding - ((values[i] - minVal) / valRange) * plotHeight;
+      
+      if (i === 0) {
+        ctx.moveTo(x, y);
+      } else {
+        ctx.lineTo(x, y);
+      }
+    }
+    ctx.stroke();
+    
+    // Draw data points
+    ctx.fillStyle = channelColors[ch];
+    for (let i = 0; i < values.length; i++) {
+      const x = padding + ((data.times[i] - minTime) / timeRange) * plotWidth;
+      const y = canvas.height - padding - ((values[i] - minVal) / valRange) * plotHeight;
+      ctx.beginPath();
+      ctx.arc(x, y, 3, 0, 2 * Math.PI);
+      ctx.fill();
     }
   }
-  ctx.stroke();
-  
-  // Draw value labels
-  ctx.fillStyle = '#5f6368';
-  ctx.font = '10px Arial';
-  ctx.fillText(maxVal.toFixed(1), 5, padding);
-  ctx.fillText(minVal.toFixed(1), 5, canvas.height - padding);
 }
 
 async function pull(){
   try{
     const r = await fetch('/api',{cache:'no-store'});
     const j = await r.json();
-    const currentTime = Date.now();
 
     // Update button states
     const startBtn = document.getElementById('btnStart');
@@ -203,29 +303,26 @@ async function pull(){
       dlBtn.style.display = j.run.csv_ready ? 'inline-block' : 'none'; 
     }
 
-    // Update each channel
+    // Update each channel data and legends
     for (let i = 1; i <= 4; i++) {
       const sensor = j[`s${i}`];
       
       // Add new data point
-      addDataPoint(i-1, sensor.flow_1s, currentTime);
+      addDataPoint(i-1, sensor.flow_1s, sensor.temp_1s);
       
-      // Calculate and display 30-second mean
-      const mean30s = calculate30SecondMean(i-1);
-      setText(`ch${i}-mean`, mean30s.toFixed(2));
-      
-      // Update status
-      setText(`ch${i}-status`, sensor.ok ? 'Connected' : 'Error');
-      
-      // Draw plot
-      drawPlot(`plot${i}`, i-1);
+      // Calculate and display 30-second means
+      const meanFlow = calculate30SecondMean(i-1, 'flow');
+      const meanTemp = calculate30SecondMean(i-1, 'temp');
+      setText(`ch${i}-mean`, meanFlow.toFixed(2));
+      setText(`ch${i}-temp`, meanTemp.toFixed(1));
     }
+
+    // Redraw plots
+    drawMultiLinePlot('flowrate-plot', 'flow');
+    drawMultiLinePlot('temperature-plot', 'temp');
 
   }catch(e){ 
     console.error('Error fetching data:', e); 
-    for (let i = 1; i <= 4; i++) {
-      setText(`ch${i}-status`, 'Connection Error');
-    }
   }
 }
 
@@ -236,7 +333,7 @@ function startPolling(){
 
 startPolling();
 
-// Start/Stop recording controls
+// Recording controls
 document.getElementById('btnStart').addEventListener('click', async ()=>{
   try{ await fetch('/start', {method:'POST'}); }catch(e){}
   pull();
@@ -256,28 +353,6 @@ pull();
 static void _handle_root(){ _server.send_P(200, "text/html", _PAGE_INDEX); }
 
 static void _handle_api(){
-  float f_1s[NUM_SENSORS], t_1s[NUM_SENSORS];
-  float m[NUM_SENSORS], r[NUM_SENSORS], cv[NUM_SENSORS];
-  bool ok[NUM_SENSORS];
-  bool rec, csv;
-  
-  get_ui_snapshot(f_1s, t_1s, m, r, cv, ok, rec, csv);
-
-  String j = "{";
-  for (int i = 0; i < NUM_SENSORS; i++) {
-    j += "\"s" + String(i+1) + "\":{";
-    j += "\"flow_1s\":" + String(f_1s[i],3) + ",\"temp_1s\":" + String(t_1s[i],3) + ",";
-    j += "\"mean10\":" + String(m[i],3) + ",\"rms10\":" + String(r[i],3) + ",\"cv10\":" + String(cv[i],2) + ",";
-    j += "\"ok\":" + String(ok[i] ? "true" : "false") + ",";
-    j += "\"enabled\":" + String(get_sensor_enabled((uint8_t)(i + 1)) ? "true" : "false");
-    j += "}";
-    if (i < NUM_SENSORS - 1) j += ",";
-  }
-  j += ",\"run\":{";
-  j += "\"recording\":" + String(rec ? "true" : "false") + ",\"csv_ready\":" + String(csv ? "true" : "false");
-  j += "}}";
-  _server.send(200, "application/json", j);
-}
   float f_1s[NUM_SENSORS], t_1s[NUM_SENSORS];
   float m[NUM_SENSORS], r[NUM_SENSORS], cv[NUM_SENSORS];
   bool ok[NUM_SENSORS];
