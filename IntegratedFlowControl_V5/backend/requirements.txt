@@ -1,0 +1,16 @@
+# Python dependencies for Integrated Flow Control System
+# Backend requirements
+
+# Flask web framework
+Flask==2.3.3
+Flask-CORS==4.0.0
+
+# Serial communication
+pyserial==3.5
+
+# HTTP requests for ESP8266 communication  
+requests==2.31.0
+
+# Optional: Development and debugging
+# Click==8.1.7  # Flask CLI support
+# Werkzeug==2.3.7  # Flask WSGI toolkit

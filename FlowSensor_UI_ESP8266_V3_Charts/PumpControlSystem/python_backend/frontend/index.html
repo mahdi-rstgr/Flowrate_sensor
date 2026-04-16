@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pump Controller</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">PUMP CONTROLLER</h1>
+        
+        <!-- Top Control Panel -->
+        <div class="top-panel">
+            <div class="selection-controls">
+                <label class="checkbox-container">
+                    <input type="checkbox" id="selectAll">
+                    <span class="checkmark"></span>
+                    Select All
+                </label>
+                <label class="checkbox-container">
+                    <input type="checkbox" id="selectX" class="pump-checkbox" data-pump="X">
+                    <span class="checkmark"></span>
+                    X Pump
+                </label>
+                <label class="checkbox-container">
+                    <input type="checkbox" id="selectY" class="pump-checkbox" data-pump="Y">
+                    <span class="checkmark"></span>
+                    Y Pump
+                </label>
+               <!-- <label class="checkbox-container"> -->
+                    <input type="checkbox" id="selectZ" class="pump-checkbox" data-pump="Z">
+                    <span class="checkmark"></span>
+                    Z Pump
+                </label>
+            </div>
+            <div class="action-buttons">
+                <button class="btn btn-start" id="startSelected">Start Selected Pumps</button>
+                <button class="btn btn-emergency" id="emergencyStop">EMERGENCY STOP</button>
+            </div>
+        </div>
+
+        <!-- Pump Controls -->
+        <div class="pump-grid">
+            <!-- X to A Pump -->
+            <div class="pump-card" data-pump="X">
+                <div class="pump-header">
+                    <h3>X Pump (Clones to A) </h3>
+                    <label class="checkbox-container">
+                        <input type="checkbox" class="pump-select" data-pump="X">
+                        <span class="checkmark"></span>
+                    </label>
+                </div>
+                <div class="pump-controls">
+                    <div class="input-group">
+                        <label>RPM:</label>
+                        <input type="number" class="rpm-input" data-pump="X" value="25" min="0" max="1000">
+                        <span class="unit">RPM</span>
+                    </div>
+                    <div class="input-group">
+                        <label>Time:</label>
+                        <input type="number" class="time-input" data-pump="X" value="10" min="0">
+                        <span class="unit">seconds</span>
+                    </div>
+                    <label class="checkbox-container continuous-checkbox">
+                        <input type="checkbox" class="continuous-checkbox" data-pump="X">
+                        <span class="checkmark"></span>
+                        Continuous Operation
+                    </label>
+                </div>
+                <div class="pump-actions">
+                    <button class="btn btn-start pump-start" data-pump="X">Start</button>
+                    <button class="btn btn-stop pump-stop" data-pump="X">Stop</button>
+                </div>
+                <div class="pump-status">
+                    <span class="status-indicator stopped" data-pump="X"></span>
+                    <span class="status-text" data-pump="X">Status: Stopped</span>
+                </div>
+            </div>
+
+            <!-- Y Pump -->
+            <div class="pump-card" data-pump="Y">
+                <div class="pump-header">
+                    <h3>Y Pump</h3>
+                    <label class="checkbox-container">
+                        <input type="checkbox" class="pump-select" data-pump="Y">
+                        <span class="checkmark"></span>
+                    </label>
+                </div>
+                <div class="pump-controls">
+                    <div class="input-group">
+                        <label>RPM:</label>
+                        <input type="number" class="rpm-input" data-pump="Y" value="20" min="0" max="1000">
+                        <span class="unit">RPM</span>
+                    </div>
+                    <div class="input-group">
+                        <label>Time:</label>
+                        <input type="number" class="time-input" data-pump="Y" value="10" min="0">
+                        <span class="unit">seconds</span>
+                    </div>
+                    <label class="checkbox-container continuous-checkbox">
+                        <input type="checkbox" class="continuous-checkbox" data-pump="Y">
+                        <span class="checkmark"></span>
+                        Continuous Operation
+                    </label>
+                </div>
+                <div class="pump-actions">
+                    <button class="btn btn-start pump-start" data-pump="Y">Start</button>
+                    <button class="btn btn-stop pump-stop" data-pump="Y">Stop</button>
+                </div>
+                <div class="pump-status">
+                    <span class="status-indicator stopped" data-pump="Y"></span>
+                    <span class="status-text" data-pump="Y">Status: Stopped</span>
+                </div>
+            </div>
+
+            <!-- Z Pump -->
+            <div class="pump-card" data-pump="Z">
+                <div class="pump-header">
+                    <h3>Z Pump</h3>
+                    <label class="checkbox-container">
+                        <input type="checkbox" class="pump-select" data-pump="Z">
+                        <span class="checkmark"></span>
+                    </label>
+                </div>
+                <div class="pump-controls">
+                    <div class="input-group">
+                        <label>RPM:</label>
+                        <input type="number" class="rpm-input" data-pump="Z" value="0" min="0" max="1000">
+                        <span class="unit">RPM</span>
+                    </div>
+                    <div class="input-group">
+                        <label>Time:</label>
+                        <input type="number" class="time-input" data-pump="Z" value="0" min="0">
+                        <span class="unit">seconds</span>
+                    </div>
+                    <label class="checkbox-container continuous-checkbox">
+                        <input type="checkbox" class="continuous-checkbox" data-pump="Z">
+                        <span class="checkmark"></span>
+                        Continuous Operation
+                    </label>
+                </div>
+                <div class="pump-actions">
+                    <button class="btn btn-start pump-start" data-pump="Z">Start</button>
+                    <button class="btn btn-stop pump-stop" data-pump="Z">Stop</button>
+                </div>
+                <div class="pump-status">
+                    <span class="status-indicator stopped" data-pump="Z"></span>
+                    <span class="status-text" data-pump="Z">Status: Stopped</span>
+                </div>
+            </div>
+        </div> 
+
+        <!-- System Status -->
+        <div class="system-status">
+            <h3>System Status</h3>
+            <div class="status-grid">
+                <div class="status-item">
+                    <span class="status-label">Active Pumps:</span>
+                    <span class="status-value" id="activePumps">0</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Selected Pumps:</span>
+                    <span class="status-value" id="selectedPumps">0</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">System Status:</span>
+                    <span class="status-value ready" id="systemStatus">Ready</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Last Update:</span>
+                    <span class="status-value" id="lastUpdate">--:--:-- --</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
